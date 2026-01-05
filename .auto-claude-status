@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "001-using-reqs-folder-and-analyzed-all-the-product-ide",
+  "state": "building",
+  "subtasks": {
+    "completed": 29,
+    "total": 42,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Live Session Room",
+    "id": null,
+    "total": 5
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 30,
+    "started_at": "2026-01-05T18:52:40.928569"
+  },
+  "last_update": "2026-01-05T20:15:42.208980"
+}

@@ -1,0 +1,531 @@
+{
+  "project_overview": {
+    "name": "Call-an-Expert Service (Last 20)",
+    "description": "A platform connecting AI hobbyists and agencies with experts when they get stuck on AI projects. Features a Chrome extension for issue capture, expert matching, real-time chat/screen sharing, and payment processing.",
+    "mvp_features": [
+      "Chrome Extension for capturing AI project issues",
+      "Expert matching system",
+      "Real-time chat with experts",
+      "Screen sharing for 15-minute sessions",
+      "Payment processing (per-session and subscription)",
+      "User authentication",
+      "Expert vetting/qualification system"
+    ]
+  },
+  "integrations_researched": [
+    {
+      "name": "Chrome Extension (Manifest V3)",
+      "type": "infrastructure",
+      "verified_package": {
+        "name": "Chrome Extension API (Manifest V3)",
+        "install_command": "N/A - uses Chrome Extension APIs directly",
+        "version": "Manifest V3 (mandatory for 2025)",
+        "verified": true
+      },
+      "api_patterns": {
+        "imports": ["chrome.runtime", "chrome.tabs", "chrome.storage", "chrome.action"],
+        "initialization": "Service workers replace persistent background pages in MV3",
+        "key_functions": [
+          "chrome.runtime.sendMessage()",
+          "chrome.tabs.query()",
+          "chrome.storage.local.set/get()",
+          "chrome.action.onClicked.addListener()"
+        ],
+        "verified_against": "Chrome for Developers documentation"
+      },
+      "configuration": {
+        "env_vars": [],
+        "config_files": ["manifest.json"],
+        "dependencies": ["HTML", "CSS", "JavaScript"]
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "embedded_database": false,
+        "notes": "Must use service workers instead of background pages. Extensions built with HTML/CSS/JavaScript."
+      },
+      "gotchas": [
+        "Manifest V3 is MANDATORY for new extensions in 2025 - MV2 is being phased out",
+        "Excessive permissions are the #1 rejection reason - only request what you need",
+        "Cannot use remotely hosted code for security reasons",
+        "Service workers run only when needed (not persistent)",
+        "Review typically takes 1-3 business days",
+        "Must include privacy policy for Chrome Web Store"
+      ],
+      "research_sources": [
+        "https://developer.chrome.com/docs/extensions/whats-new",
+        "https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3",
+        "https://www.extensionradar.com/blog/how-to-make-chrome-extension"
+      ]
+    },
+    {
+      "name": "Next.js",
+      "type": "library",
+      "verified_package": {
+        "name": "next",
+        "install_command": "npm install next@latest react@latest react-dom@latest",
+        "version": "15.5.x (latest as of 2025)",
+        "verified": true
+      },
+      "api_patterns": {
+        "imports": [
+          "import { NextRequest, NextResponse } from 'next/server'",
+          "import Link from 'next/link'",
+          "import Image from 'next/image'"
+        ],
+        "initialization": "npx create-next-app@latest",
+        "key_functions": [
+          "App Router with React Server Components",
+          "Server Actions",
+          "Middleware",
+          "API Routes",
+          "Static Site Generation (SSG)",
+          "Server-Side Rendering (SSR)"
+        ],
+        "verified_against": "nextjs.org official documentation"
+      },
+      "configuration": {
+        "env_vars": ["NEXT_PUBLIC_*"],
+        "config_files": ["next.config.js", "tsconfig.json"],
+        "dependencies": ["react", "react-dom", "typescript"]
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "hosting_options": ["Vercel", "AWS", "Docker", "Self-hosted"]
+      },
+      "gotchas": [
+        "Next.js 15 uses React Server Components by default",
+        "fetch requests and GET Route Handlers are NOT cached by default (breaking change)",
+        "Turbopack is now stable for development and in beta for production builds",
+        "CVE-2025-29927: Critical auth bypass vulnerability in middleware (versions 11.1.4-15.2.2) - ensure you're on latest patched version"
+      ],
+      "research_sources": [
+        "https://nextjs.org/blog/next-15",
+        "https://nextjs.org/blog/next-15-5",
+        "https://www.npmjs.com/package/next"
+      ]
+    },
+    {
+      "name": "Supabase",
+      "type": "service",
+      "verified_package": {
+        "name": "@supabase/supabase-js",
+        "install_command": "npm install @supabase/supabase-js",
+        "version": "latest",
+        "verified": true
+      },
+      "api_patterns": {
+        "imports": [
+          "import { createClient } from '@supabase/supabase-js'"
+        ],
+        "initialization": "const supabase = createClient(supabaseUrl, supabaseAnonKey)",
+        "key_functions": [
+          "supabase.auth.signUp()",
+          "supabase.auth.signInWithPassword()",
+          "supabase.auth.signOut()",
+          "supabase.from('table').select()",
+          "supabase.from('table').insert()",
+          "supabase.channel().subscribe()"
+        ],
+        "verified_against": "Supabase official documentation"
+      },
+      "configuration": {
+        "env_vars": ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
+        "config_files": [],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "database": "PostgreSQL",
+        "features": ["Database", "Auth", "Storage", "Edge Functions", "Realtime"]
+      },
+      "pricing": {
+        "free_tier": {
+          "api_requests": "Unlimited",
+          "monthly_active_users": "50,000",
+          "database": "500MB",
+          "storage": "1GB"
+        },
+        "pro": "$25/month - 100,000 MAU, 8GB database"
+      },
+      "gotchas": [
+        "Row-Level Security (RLS) must be enabled for security",
+        "Use service role key only on server-side (never expose to client)",
+        "Supabase launched MCP server for AI tool integration in April 2025",
+        "Free tier has 500MB database limit",
+        "AES-256 encryption at rest for database files and backups"
+      ],
+      "research_sources": [
+        "https://supabase.com/",
+        "https://supabase.com/features",
+        "https://hackceleration.com/supabase-review/"
+      ]
+    },
+    {
+      "name": "Stripe",
+      "type": "service",
+      "verified_package": {
+        "name": "stripe",
+        "install_command": "npm install stripe",
+        "version": "20.1.x (latest)",
+        "verified": true
+      },
+      "api_patterns": {
+        "imports": [
+          "const stripe = require('stripe')('sk_test_...')",
+          "import Stripe from 'stripe'"
+        ],
+        "initialization": "const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)",
+        "key_functions": [
+          "stripe.customers.create()",
+          "stripe.paymentIntents.create()",
+          "stripe.subscriptions.create()",
+          "stripe.checkout.sessions.create()",
+          "stripe.webhooks.constructEvent()"
+        ],
+        "verified_against": "Stripe official documentation"
+      },
+      "frontend_packages": {
+        "react": "@stripe/react-stripe-js",
+        "loader": "@stripe/stripe-js",
+        "install": "npm install @stripe/stripe-js @stripe/react-stripe-js"
+      },
+      "configuration": {
+        "env_vars": ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY", "STRIPE_WEBHOOK_SECRET"],
+        "config_files": [],
+        "dependencies": ["express", "cors", "body-parser", "dotenv"]
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "notes": "Use Payment Intents API (replaces deprecated Tokens/Sources APIs)"
+      },
+      "gotchas": [
+        "Requires Node.js 16+ (Node 16 support deprecated, use Node 18+)",
+        "Never expose secret key to client-side code",
+        "Use Payment Methods API instead of deprecated Tokens/Sources APIs",
+        "Webhook signature verification is required for security",
+        "Support for Deno as of version 11.16.0"
+      ],
+      "research_sources": [
+        "https://www.npmjs.com/package/stripe",
+        "https://docs.stripe.com/get-started/development-environment?lang=node",
+        "https://github.com/stripe/stripe-node"
+      ]
+    },
+    {
+      "name": "Socket.io",
+      "type": "library",
+      "verified_package": {
+        "name": "socket.io (server) + socket.io-client (client)",
+        "install_command": "npm install socket.io socket.io-client",
+        "version": "latest",
+        "verified": true
+      },
+      "api_patterns": {
+        "imports": [
+          "const { Server } = require('socket.io')",
+          "import { io } from 'socket.io-client'"
+        ],
+        "initialization": "const io = new Server(server, { cors: { origin: '*' } })",
+        "key_functions": [
+          "socket.emit(eventName, data)",
+          "socket.on(eventName, callback)",
+          "socket.join(room)",
+          "socket.to(room).emit()",
+          "socket.broadcast.emit()"
+        ],
+        "verified_against": "Socket.io official documentation"
+      },
+      "configuration": {
+        "env_vars": [],
+        "config_files": [],
+        "dependencies": ["express"]
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "notes": "Bidirectional communication using WebSockets with intelligent fallbacks"
+      },
+      "features": [
+        "Auto-reconnection on network issues",
+        "Binary data transmission (images, files)",
+        "Namespaces for modularity",
+        "Rooms for targeted messaging",
+        "Cross-browser compatibility"
+      ],
+      "gotchas": [
+        "Requires both server (socket.io) and client (socket.io-client) packages",
+        "CORS configuration needed for cross-origin requests",
+        "WebSocket connections maintain persistent state - plan for scaling",
+        "Rooms are server-side only - clients cannot directly join rooms"
+      ],
+      "research_sources": [
+        "https://socket.io/get-started/chat",
+        "https://www.videosdk.live/developer-hub/socketio/socketio-npm",
+        "https://www.npmjs.com/package/socket.io"
+      ]
+    },
+    {
+      "name": "Daily.co Video SDK",
+      "type": "service",
+      "verified_package": {
+        "name": "@daily-co/daily-js",
+        "install_command": "npm install @daily-co/daily-js",
+        "version": "latest",
+        "verified": true
+      },
+      "api_patterns": {
+        "imports": [
+          "import DailyIframe from '@daily-co/daily-js'"
+        ],
+        "initialization": "const callFrame = DailyIframe.createFrame()",
+        "key_functions": [
+          "callFrame.join({ url: roomUrl })",
+          "callFrame.leave()",
+          "callFrame.startScreenShare()",
+          "callFrame.stopScreenShare()",
+          "callFrame.setLocalVideo(enabled)",
+          "callFrame.setLocalAudio(enabled)"
+        ],
+        "verified_against": "Daily.co official documentation"
+      },
+      "configuration": {
+        "env_vars": ["DAILY_API_KEY"],
+        "config_files": [],
+        "dependencies": []
+      },
+      "pricing": {
+        "video_audio": "$0.004 per minute",
+        "audio_only": "$0.00099 per minute",
+        "rtmp_streaming": "$0.015 per encoded minute",
+        "hipaa_compliance": "$500/month subscription",
+        "free_tier": "Available for testing/prototyping"
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "features": ["Video calls", "Audio calls", "Screen sharing", "Recording", "Chat", "HIPAA compliance"]
+      },
+      "gotchas": [
+        "Pricing is usage-based per participant minute",
+        "HIPAA compliance requires $500/month subscription",
+        "Screen sharing on mobile requires additional setup",
+        "React Native package available: @daily-co/react-native-daily-js",
+        "Pre-built UI components available with chat and dual screen sharing"
+      ],
+      "research_sources": [
+        "https://www.daily.co/pricing/video-sdk/",
+        "https://www.npmjs.com/package/@daily-co/react-native-daily-js",
+        "https://docs.daily.co/guides/products/mobile/ios-screen-share"
+      ]
+    },
+    {
+      "name": "Clerk Authentication",
+      "type": "service",
+      "verified_package": {
+        "name": "@clerk/nextjs",
+        "install_command": "npm install @clerk/nextjs",
+        "version": "latest",
+        "verified": true
+      },
+      "api_patterns": {
+        "imports": [
+          "import { ClerkProvider, SignIn, SignUp, UserButton } from '@clerk/nextjs'",
+          "import { auth, currentUser } from '@clerk/nextjs/server'"
+        ],
+        "initialization": "Wrap app with <ClerkProvider>",
+        "key_functions": [
+          "<SignIn />",
+          "<SignUp />",
+          "<UserButton />",
+          "auth()",
+          "currentUser()",
+          "clerkMiddleware()"
+        ],
+        "verified_against": "Clerk official documentation"
+      },
+      "configuration": {
+        "env_vars": ["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY"],
+        "config_files": ["middleware.ts"],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "features": ["Email/password", "OAuth", "SSO (SAML)", "MFA", "Session management"]
+      },
+      "gotchas": [
+        "NEXT_PUBLIC_ prefix is required for client-side env vars - missing it causes silent failures",
+        "clerkMiddleware() does NOT protect routes by default - must opt-in",
+        "CVE-2025-29927 affects Next.js middleware - ensure using patched versions",
+        "Production-ready auth achievable in ~30 minutes",
+        "First-class Next.js App Router support with React Server Components"
+      ],
+      "research_sources": [
+        "https://clerk.com/docs/nextjs/getting-started/quickstart",
+        "https://clerk.com/articles/complete-authentication-guide-for-nextjs-app-router",
+        "https://www.npmjs.com/package/@clerk/nextjs"
+      ]
+    },
+    {
+      "name": "Tailwind CSS",
+      "type": "library",
+      "verified_package": {
+        "name": "tailwindcss",
+        "install_command": "npm install tailwindcss @tailwindcss/postcss",
+        "version": "4.1.x (latest)",
+        "verified": true
+      },
+      "api_patterns": {
+        "imports": ["@import 'tailwindcss'"],
+        "initialization": "npx tailwindcss init",
+        "key_functions": ["Utility classes in HTML/JSX"],
+        "verified_against": "tailwindcss.com official documentation"
+      },
+      "configuration": {
+        "env_vars": [],
+        "config_files": ["tailwind.config.js", "postcss.config.js"],
+        "dependencies": ["postcss", "autoprefixer"]
+      },
+      "infrastructure": {
+        "requires_docker": false
+      },
+      "gotchas": [
+        "Tailwind CSS v4 is latest (major changes from v3)",
+        "Must configure content paths to scan for classes",
+        "JIT (Just-In-Time) mode is default",
+        "Use @tailwindcss/postcss for PostCSS integration"
+      ],
+      "research_sources": [
+        "https://www.npmjs.com/package/tailwindcss",
+        "https://tailwindcss.com/docs/guides/nextjs",
+        "https://github.com/tailwindlabs/tailwindcss/releases"
+      ]
+    },
+    {
+      "name": "WebRTC (Alternative to Daily.co)",
+      "type": "library",
+      "verified_package": {
+        "name": "simple-peer",
+        "install_command": "npm install simple-peer",
+        "version": "latest",
+        "verified": true
+      },
+      "api_patterns": {
+        "imports": [
+          "import Peer from 'simple-peer'"
+        ],
+        "initialization": "const peer = new Peer({ initiator: true, stream })",
+        "key_functions": [
+          "peer.signal(data)",
+          "peer.on('signal', callback)",
+          "peer.on('stream', callback)",
+          "navigator.mediaDevices.getDisplayMedia() for screen sharing"
+        ],
+        "verified_against": "WebRTC documentation and simple-peer npm"
+      },
+      "configuration": {
+        "env_vars": [],
+        "config_files": [],
+        "dependencies": ["socket.io-client for signaling"]
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "notes": "Peer-to-peer, no server needed for media (only signaling). May need TURN server for NAT traversal."
+      },
+      "gotchas": [
+        "Chrome no longer requires extensions for screen sharing (getDisplayMedia works natively)",
+        "Need signaling server for peer discovery (Socket.io works well)",
+        "TURN servers needed for users behind restrictive NATs/firewalls",
+        "simple-peer abstracts complex WebRTC APIs",
+        "Consider RTCMultiConnection.js for multi-party calls"
+      ],
+      "research_sources": [
+        "https://www.videosdk.live/developer-hub/webrtc/react-webrtc-video-call",
+        "https://github.com/rghale/webrtc-screen-share",
+        "https://www.npmjs.com/search?q=screen-sharing"
+      ]
+    }
+  ],
+  "unverified_claims": [
+    {
+      "claim": "4-6 month MVP timeline with $50-100K budget",
+      "reason": "Timeline depends on team size, expertise, and feature scope. Budget may vary based on third-party service costs.",
+      "risk_level": "medium"
+    },
+    {
+      "claim": "15-20% conversion rate from trial to paid",
+      "reason": "Industry benchmark, but actual conversion depends on product-market fit and execution",
+      "risk_level": "low"
+    },
+    {
+      "claim": "10% platform fee is competitive",
+      "reason": "Standard marketplace fee ranges 10-20%. Competitive analysis with Upwork/Fiverr suggests 10% is reasonable",
+      "risk_level": "low"
+    }
+  ],
+  "recommended_tech_stack": {
+    "frontend": {
+      "framework": "Next.js 15",
+      "styling": "Tailwind CSS 4.x",
+      "package": "next@latest + tailwindcss@latest"
+    },
+    "backend": {
+      "option_1": "Next.js API Routes + Server Actions (simpler)",
+      "option_2": "Separate Node.js/Express backend (more scalable)"
+    },
+    "database": {
+      "primary": "Supabase (PostgreSQL)",
+      "features": ["Database", "Auth", "Realtime subscriptions", "Storage"]
+    },
+    "authentication": {
+      "option_1": "Supabase Auth (included with Supabase)",
+      "option_2": "Clerk (better UX, faster setup, more features)"
+    },
+    "payments": {
+      "provider": "Stripe",
+      "packages": ["stripe", "@stripe/stripe-js", "@stripe/react-stripe-js"]
+    },
+    "real_time_chat": {
+      "provider": "Socket.io",
+      "packages": ["socket.io", "socket.io-client"]
+    },
+    "video_screen_share": {
+      "option_1_managed": {
+        "provider": "Daily.co",
+        "package": "@daily-co/daily-js",
+        "pros": "Easy setup, reliable, built-in features",
+        "cons": "Per-minute pricing adds up"
+      },
+      "option_2_self_hosted": {
+        "provider": "WebRTC + simple-peer",
+        "packages": ["simple-peer"],
+        "pros": "No per-minute fees, full control",
+        "cons": "More complex, need TURN server for reliability"
+      }
+    },
+    "chrome_extension": {
+      "framework": "Manifest V3",
+      "tech": "HTML, CSS, JavaScript/TypeScript",
+      "build_tool": "Vite or Webpack (optional)"
+    }
+  },
+  "recommendations": [
+    "Use Manifest V3 for Chrome Extension - MV2 is being deprecated",
+    "Consider Clerk over Supabase Auth for faster auth setup and better UX components",
+    "Start with Daily.co for video/screen sharing to reduce complexity, migrate to WebRTC later for cost savings",
+    "Use Socket.io for real-time chat - well documented and battle-tested",
+    "Implement Stripe Checkout for faster payment integration, then expand to custom flows",
+    "Deploy on Vercel for Next.js (optimal performance and easy deployment)",
+    "Ensure you're on patched Next.js version to avoid CVE-2025-29927 vulnerability",
+    "Request minimal Chrome extension permissions to avoid rejection",
+    "Enable Row-Level Security (RLS) in Supabase from day one",
+    "Consider starting with 15-minute session blocks as mentioned in requirements - Daily.co pricing at $0.004/min = $0.06/session (very affordable)"
+  ],
+  "estimated_monthly_costs": {
+    "supabase_pro": "$25/month",
+    "vercel_pro": "$20/month",
+    "daily_co_estimate": "$50-200/month (based on ~1000 15-min sessions)",
+    "clerk_free_tier": "$0 (up to 10,000 MAU)",
+    "stripe_fees": "2.9% + $0.30 per transaction",
+    "total_estimate": "$95-245/month for MVP scale"
+  },
+  "context7_libraries_used": [],
+  "created_at": "2026-01-05T00:00:00Z"
+}

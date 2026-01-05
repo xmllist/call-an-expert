@@ -1,0 +1,95 @@
+{
+  "discovered_files": {
+    "supabase/config.toml": {
+      "description": "Supabase local development configuration with: API on port 54321, DB on 54322, Studio on 54323, Auth with Google OAuth enabled, Realtime enabled, Storage with 50MiB file limit. Project ID is 'call-an-expert'.",
+      "category": "configuration",
+      "discovered_at": "2026-01-05T11:54:33.411280+00:00"
+    },
+    "supabase/migrations/001_initial_schema.sql": {
+      "description": "Initial database schema with 7 tables (profiles, experts, help_requests, sessions, messages, ratings, subscriptions). Includes auto-create profile trigger on auth.users insert, expert rating auto-update trigger, session count tracking, and updated_at timestamp triggers. Uses GIN index for expertise_tags array searching.",
+      "category": "database",
+      "discovered_at": "2026-01-05T11:57:01.849916+00:00"
+    },
+    "supabase/migrations/002_rls_policies.sql": {
+      "description": "RLS policies migration with 28 policies for all 7 tables. Key policies: profiles_select_authenticated (view any profile), experts_select_approved (only approved experts visible), sessions_select_participant (user/expert only), messages via is_session_participant() helper, ratings public read. Service role bypasses all RLS for webhooks/admin.",
+      "category": "security",
+      "discovered_at": "2026-01-05T11:59:13.625128+00:00"
+    },
+    "web/package.json": {
+      "description": "Next.js 15.1.3 project initialized with React 19.0.0, TypeScript 5.7.2, Tailwind CSS 3.4.17. Includes Supabase SSR client, Stripe React SDK, and Socket.io client. Dev port 3000, scripts: dev, build, start, lint, test.",
+      "category": "project-structure",
+      "discovered_at": "2026-01-05T12:00:46.296521+00:00"
+    },
+    "web/lib/supabase/client.ts": {
+      "description": "Supabase browser client using @supabase/ssr createBrowserClient. Export a createClient() function that creates a browser-compatible Supabase client. Uses NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.",
+      "category": "supabase",
+      "discovered_at": "2026-01-05T12:02:24.500046+00:00"
+    },
+    "web/lib/supabase/middleware.ts": {
+      "description": "Supabase middleware client using createServerClient for Next.js middleware context. Uses NextRequest/NextResponse for cookie handling (different from server.ts which uses next/headers). Exports updateSession() that refreshes auth tokens and returns the user. IMPORTANT: Uses getUser() not getSession() in middleware - getSession() doesn't read cookies correctly from request.",
+      "category": "pattern",
+      "discovered_at": "2026-01-05T12:07:01.858443+00:00"
+    },
+    "web/app/login/page.tsx": {
+      "description": "Login page using Supabase Auth with email/password signInWithPassword() and Google OAuth signInWithOAuth(). Client-side 'use client' component with loading states and error handling. Redirects to /dashboard or intended page after auth. Uses createClient() from @/lib/supabase/client for browser-side auth.",
+      "category": "authentication",
+      "discovered_at": "2026-01-05T12:10:21.815049+00:00"
+    },
+    "web/app/auth/callback/route.ts": {
+      "description": "Server-side route handler for OAuth callbacks and email confirmation. Uses exchangeCodeForSession() from Supabase server client to exchange authorization code for user session. Handles errors by redirecting to /login with error query param. Supports redirectTo query param for post-auth navigation.",
+      "category": "authentication",
+      "discovered_at": "2026-01-05T12:10:21.837138+00:00"
+    },
+    "extension/vite.config.ts": {
+      "description": "Chrome extension Vite build config with multi-entry points: popup.html, src/background.ts, src/content.ts. Uses rollupOptions to output background.js and content.js at root level (required by manifest.json). All dependencies are bundled inline (no externals) since Chrome extensions can't load external modules. Uses Terser for minification.",
+      "category": "build-config",
+      "discovered_at": "2026-01-05T12:14:40.793312+00:00"
+    },
+    "extension/manifest.json": {
+      "description": "Chrome Extension Manifest V3 config with minimal permissions (activeTab, storage). Uses service worker at background.js, content script at content.js, popup at popup.html. Icons stored in icons/ directory with sizes 16, 32, 48, 128px. Content security policy restricts to 'self' for script-src and object-src. Host permissions array is empty for minimal access.",
+      "category": "extension",
+      "discovered_at": "2026-01-05T12:18:56.858353+00:00"
+    },
+    "extension/src/popup/Popup.tsx": {
+      "description": "Popup component captures screenshots using chrome.tabs.captureVisibleTab (requires activeTab permission). Sends help requests to background script via chrome.runtime.sendMessage with type 'SUBMIT_HELP_REQUEST'. Uses import.meta.env.VITE_APP_URL for web app URL configuration.",
+      "category": "architecture",
+      "discovered_at": "2026-01-05T12:22:26.544470+00:00"
+    },
+    "extension/src/background.ts": {
+      "description": "Manifest V3 service worker handles API communication. Uses chrome.runtime.onMessage for popup/content script messages with async response pattern (return true). Uses chrome.runtime.onMessageExternal for web app auth sync (origin validation required). Auth tokens stored in chrome.storage.local with expiry checking. API_BASE_URL defaults to localhost:3000. Message types: SUBMIT_HELP_REQUEST, GET_USER_PROFILE, AUTH_CALLBACK, LOGOUT, OPEN_DASHBOARD, OPEN_LOGIN, GET_AUTH_STATUS, PING, SYNC_AUTH, SYNC_LOGOUT.",
+      "category": "extension",
+      "discovered_at": "2026-01-05T12:24:33.724829+00:00"
+    },
+    "web/components/": {
+      "description": "Components directory now contains Hero.tsx and Features.tsx - reusable landing page sections. Hero has headline, CTAs, trust indicators, stats grid. Features has how-it-works (3 steps), 6 feature cards, pricing preview (per-session and subscription), and final CTA section. All use container-app utility class and primary/secondary color scheme.",
+      "category": "component",
+      "discovered_at": "2026-01-05T12:31:31.607151+00:00"
+    },
+    "web/app/dashboard/page.tsx": {
+      "description": "Dashboard page is a Server Component that uses Supabase server client for data fetching. Uses redirect() from next/navigation for auth check (not client-side hook). Fetches sessions with complex joins: experts!sessions_expert_id_fkey for expert data, profiles!experts_id_fkey for expert's profile. Data transformation needed to match TypeScript types due to Supabase's join return format.",
+      "category": "pattern",
+      "discovered_at": "2026-01-05T12:35:35.924079+00:00"
+    },
+    "web/app/expert/dashboard/page.tsx": {
+      "description": "Expert dashboard page is a Server Component that fetches expert sessions using profiles!sessions_user_id_fkey join to get user info (instead of expert info like user dashboard). Calculates earnings by summing expert_payout field from sessions with different status filters. Auth check uses redirect pattern: first checks user, then fetches expert record and redirects to /become-expert if not approved. Session transformations map user data into the expert slot of Session type for reusing SessionList component.",
+      "category": "pattern",
+      "discovered_at": "2026-01-05T12:44:52.876781+00:00"
+    },
+    "web/app/become-expert/page.tsx": {
+      "description": "Expert application page is a Server Component with three states: (1) No expert record shows application form with benefits and FAQ, (2) Expert pending approval shows status with application details and contact support option, (3) Approved expert redirects to /expert/dashboard. Form submits to experts table with approved=false for admin review. Uses ExpertApplicationForm client component for the form.",
+      "category": "pattern",
+      "discovered_at": "2026-01-05T12:49:56.551575+00:00"
+    },
+    "web/app/api/session/route.ts": {
+      "description": "Session CRUD API routes for booking expert sessions. POST creates sessions with: expert availability check, scheduling conflict detection (overlapping times), platform fee calculation (10%), help_request_id validation. GET lists sessions with role filter (user/expert/all), status filter, upcoming flag. Returns sessions with expert/user info via Supabase joins. Status transitions: pending_payment -> paid -> active -> completed or cancelled. Conflict check uses date range query to prevent double-booking.",
+      "category": "api-routes",
+      "discovered_at": "2026-01-05T12:59:01.983009+00:00"
+    },
+    "web/lib/socket/client.ts": {
+      "description": "Socket.io client singleton with typed events. Uses getSocket() for lazy initialization, connect()/disconnect() for connection management. autoConnect: false for manual control. Provides helper functions: joinSession(), leaveSession(), sendMessage(), sendTypingIndicator(), endSession(). WebRTC signaling: sendWebRTCOffer/Answer(), sendIceCandidate(). Event subscriptions: subscribeToSessionEvents(), subscribeToWebRTCEvents() return cleanup functions for React useEffect. Types (ServerToClientEvents, ClientToServerEvents) match server/src/socket.ts exactly.",
+      "category": "socket",
+      "discovered_at": "2026-01-05T13:12:12.572241+00:00"
+    }
+  },
+  "last_updated": "2026-01-05T13:12:12.572262+00:00"
+}
