@@ -781,7 +781,9 @@
             "command": "grep -q 'paymentIntents.create' web/app/api/payment/create-intent/route.ts && echo 'OK'",
             "expected": "OK"
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Created web/app/api/payment/create-intent/route.ts with POST endpoint for creating Stripe Payment Intents. Features: (1) Authentication with user ownership verification, (2) Session status validation (pending_payment/scheduled only), (3) Reuses existing valid payment intents to prevent duplicates, (4) Minimum $0.50 amount validation per Stripe requirements, (5) Calculates 10% platform fee using calculateFees() from stripe/server.ts, (6) Stores payment_intent_id in session record for webhook reconciliation, (7) Full metadata (sessionId, userId, expertId, scheduledAt, fees) for webhook processing, (8) Comprehensive error handling for Stripe and auth failures. Verification passed. Committed as 5ac877f.",
+          "updated_at": "2026-01-05T13:30:31.752981+00:00"
         },
         {
           "id": "subtask-9-3",
@@ -797,8 +799,9 @@
             "command": "grep -q 'constructEvent' web/app/api/webhook/stripe/route.ts && echo 'OK'",
             "expected": "OK"
           },
-          "status": "pending",
-          "notes": "CRITICAL: Must verify webhook signature"
+          "status": "completed",
+          "notes": "Created web/app/api/webhook/stripe/route.ts with Stripe webhook handler. Features: (1) Signature verification using stripe.webhooks.constructEvent, (2) Admin Supabase client for webhook processing (uses service role key to bypass RLS), (3) Handles payment_intent.succeeded to update session status to 'paid', (4) Handles payment_intent.payment_failed to mark sessions as 'payment_failed', (5) Handles customer.subscription.created/updated for subscription upserts, (6) Handles customer.subscription.deleted to mark as 'canceled', (7) Handles checkout.session.completed for alternate payment flow, (8) Handles charge.refunded for refund tracking, (9) Handles account.updated for Stripe Connect expert accounts. Returns 200 status even on errors to acknowledge receipt. Verification passed. Committed as ec08d94.",
+          "updated_at": "2026-01-05T13:34:16.611305+00:00"
         },
         {
           "id": "subtask-9-4",
@@ -815,7 +818,9 @@
             "command": "grep -q 'PaymentElement' web/components/payment/CheckoutForm.tsx && echo 'OK'",
             "expected": "OK"
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Created web/components/payment/CheckoutForm.tsx and web/components/payment/PaymentStatus.tsx. CheckoutForm uses Stripe PaymentElement with Elements provider, session summary display, custom Stripe appearance theming, loading/error states, and includes CheckoutWrapper for automatic payment intent fetching. PaymentStatus displays payment status with visual indicators, session details, contextual action buttons, and includes PaymentStatusFromURL for Stripe redirect handling and PaymentBadge for compact display. Verification passed: PaymentElement found in CheckoutForm.tsx. Committed as 547e7fa.",
+          "updated_at": "2026-01-05T13:37:57.666832+00:00"
         },
         {
           "id": "subtask-9-5",
@@ -835,7 +840,9 @@
               "Subscribe buttons work"
             ]
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Created subscription API routes and pricing page. Files created: (1) web/app/api/subscription/route.ts - Full CRUD for subscriptions with GET (list subscriptions), POST (create Stripe Checkout session), DELETE (cancel at period end), PATCH (reactivate). Three subscription plans: starter ($99/year, 10 sessions), professional ($249/year, 30 sessions), enterprise ($499/year, 100 sessions). (2) web/app/pricing/page.tsx - Interactive pricing page with per-session pricing section, subscription plan cards with all features, Stripe Checkout integration, FAQ section, loading/error states. Follows existing patterns: uses getStripeServer() from lib/stripe/server.ts, createClient() from lib/supabase/server.ts, same CSS styling with primary/secondary color scheme. Verification passed. Committed as 38e34eb.",
+          "updated_at": "2026-01-05T13:41:59.509094+00:00"
         }
       ]
     },
@@ -863,7 +870,9 @@
             "command": "grep -q 'ratings' web/app/api/rating/route.ts && echo 'OK'",
             "expected": "OK"
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Created web/app/api/rating/route.ts with full CRUD operations for session ratings. Features: (1) POST /api/rating - Creates new ratings with authentication, session validation (must be completed), participant verification, duplicate prevention (unique constraint), score validation (1-5), optional comment (max 1000 chars). Returns 201 with rater/ratee profiles. (2) GET /api/rating - Lists ratings with filtering by type (given/received/all), session_id, or user_id. Includes rating summary statistics (total, average, distribution) for user queries. Supports pagination (limit/offset). Public access for user_id queries, auth required for personal ratings. (3) DELETE returns 405 with guidance to use /api/rating/[id]. Database trigger automatically updates expert.rating and expert.total_reviews when ratings are inserted. Verification passed. Committed as 9b61aa1.",
+          "updated_at": "2026-01-05T13:44:04.688175+00:00"
         },
         {
           "id": "subtask-10-2",
@@ -1151,5 +1160,5 @@
   "status": "in_progress",
   "planStatus": "in_progress",
   "updated_at": "2026-01-05T11:52:39.602Z",
-  "last_updated": "2026-01-05T13:28:43.779541+00:00"
+  "last_updated": "2026-01-05T13:44:04.688184+00:00"
 }

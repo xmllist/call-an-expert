@@ -114,7 +114,22 @@
       "description": "Stripe server-side configuration using stripe SDK with singleton pattern. Uses STRIPE_SECRET_KEY (server-only), STRIPE_WEBHOOK_SECRET for webhook verification. Includes getStripeServer() singleton, constructWebhookEvent() helper for webhook signature verification, calculateFees() for 10% platform fee calculation, formatAmount() for currency display. API version 2024-12-18.acacia. CRITICAL: Never import in client components.",
       "category": "configuration",
       "discovered_at": "2026-01-05T13:28:50.893087+00:00"
+    },
+    "web/components/payment/CheckoutForm.tsx": {
+      "description": "Stripe checkout form using PaymentElement from @stripe/react-stripe-js. Wraps form in Elements provider with clientSecret. Uses getStripe() singleton from lib/stripe/client.ts. Custom appearance theming with primary-600 color. CheckoutWrapper component auto-fetches payment intent from /api/payment/create-intent. Session summary shows expert, duration, scheduled time, and total.",
+      "category": "component",
+      "discovered_at": "2026-01-05T13:38:08.789448+00:00"
+    },
+    "web/components/payment/PaymentStatus.tsx": {
+      "description": "Payment status display component with 7 states: pending, processing, succeeded, failed, cancelled, refunded, requires_action. PaymentStatusFromURL reads Stripe redirect params (payment, redirect_status) from URL. PaymentBadge provides compact status display for lists. All variants have appropriate icons, colors, and action buttons.",
+      "category": "component",
+      "discovered_at": "2026-01-05T13:38:08.819665+00:00"
+    },
+    "web/app/api/subscription/route.ts": {
+      "description": "Subscription API with three plans: starter ($99/year, 10 sessions), professional ($249/year, 30 sessions), enterprise ($499/year, 100 sessions). Uses Stripe Checkout sessions for subscription creation with inline price_data (in production, use pre-created Stripe Prices). Exports SUBSCRIPTION_PLANS constant for reuse in other components. Handles subscription lifecycle: create via Checkout, cancel at period end, reactivate pending cancellation.",
+      "category": "api",
+      "discovered_at": "2026-01-05T13:42:11.916429+00:00"
     }
   },
-  "last_updated": "2026-01-05T13:28:50.893117+00:00"
+  "last_updated": "2026-01-05T13:42:11.916451+00:00"
 }
