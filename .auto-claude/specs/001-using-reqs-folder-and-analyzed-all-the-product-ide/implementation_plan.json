@@ -889,7 +889,9 @@
             "command": "grep -q 'score' web/components/session/RatingModal.tsx && echo 'OK'",
             "expected": "OK"
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Created rating modal and star rating components. Files created: (1) web/components/ui/StarRating.tsx - Reusable interactive star rating component with hover effects, size variants (sm/md/lg/xl), read-only display mode, StarRatingDisplay for static ratings with half-star support, and RATING_LABELS constant. (2) web/components/session/RatingModal.tsx - Full-featured modal for post-session ratings with: 5-star score selection, optional comment field (max 1000 chars), validation, loading/error states, success animation, escape key handling, body scroll lock, useRatingModal hook for state management, and RatingPrompt component for inline rating prompts. Both components follow existing patterns using 'use client', Tailwind CSS with primary/secondary color scheme, and consistent button/form styling. Verification passed: grep confirmed 'score' exists in RatingModal.tsx. Committed as cef6a2e.",
+          "updated_at": "2026-01-05T13:48:03.364829+00:00"
         }
       ]
     },
@@ -922,7 +924,9 @@
             "command": "grep -q 'fetch' extension/src/api.ts && echo 'OK'",
             "expected": "OK"
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Created extension/src/api.ts with dedicated API client module including: (1) Type definitions for AuthTokens, HelpRequest, ExpertProfile, MatchedExpert, Session, UserProfile, ApiResponse, etc. (2) Core apiRequest() function using fetch with automatic auth header injection from chrome.storage. (3) API functions: createHelpRequest(), getUserProfile(), getHelpRequests(), getMatchedExperts(), getExpertsByTags(), getExperts(), getExpertProfile(), getSessions(), getSession(), createSession(), updateSession(), submitRating(), getRatings(), getSubscription(). (4) Auth utilities: getAuthTokens(), setAuthTokens(), clearAuthTokens(), isAuthenticated(). (5) URL utilities: getApiBaseUrl(), getDashboardUrl(), getLoginUrl(), getExpertUrl(), getSessionUrl(). Updated extension/src/background.ts to import and use the new API module, removing duplicate code. Verification passed: grep confirmed 'fetch' in api.ts. Committed as 24d0a98.",
+          "updated_at": "2026-01-05T13:50:59.385133+00:00"
         },
         {
           "id": "subtask-11-2",
@@ -1160,5 +1164,5 @@
   "status": "in_progress",
   "planStatus": "in_progress",
   "updated_at": "2026-01-05T11:52:39.602Z",
-  "last_updated": "2026-01-05T13:44:04.688184+00:00"
+  "last_updated": "2026-01-05T13:50:59.385145+00:00"
 }
