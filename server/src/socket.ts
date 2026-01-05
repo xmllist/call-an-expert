@@ -24,6 +24,24 @@ export interface TypingPayload {
   isTyping: boolean
 }
 
+export interface WebRTCOfferPayload {
+  sessionId: string
+  targetUserId: string
+  offer: RTCSessionDescriptionInit
+}
+
+export interface WebRTCAnswerPayload {
+  sessionId: string
+  targetUserId: string
+  answer: RTCSessionDescriptionInit
+}
+
+export interface WebRTCIceCandidatePayload {
+  sessionId: string
+  targetUserId: string
+  candidate: RTCIceCandidateInit
+}
+
 export interface SessionParticipant {
   socketId: string
   userId: string
@@ -39,6 +57,9 @@ export interface ServerToClientEvents {
   'session-ended': (data: { sessionId: string; endedBy: string; reason?: string }) => void
   'error': (data: { code: string; message: string }) => void
   'participants': (data: { participants: SessionParticipant[] }) => void
+  'webrtc-offer': (data: { fromUserId: string; offer: RTCSessionDescriptionInit }) => void
+  'webrtc-answer': (data: { fromUserId: string; answer: RTCSessionDescriptionInit }) => void
+  'webrtc-ice-candidate': (data: { fromUserId: string; candidate: RTCIceCandidateInit }) => void
 }
 
 export interface ClientToServerEvents {
@@ -47,6 +68,9 @@ export interface ClientToServerEvents {
   'chat-message': (data: ChatMessagePayload) => void
   'typing': (data: TypingPayload) => void
   'end-session': (data: { sessionId: string; reason?: string }) => void
+  'webrtc-offer': (data: WebRTCOfferPayload) => void
+  'webrtc-answer': (data: WebRTCAnswerPayload) => void
+  'webrtc-ice-candidate': (data: WebRTCIceCandidatePayload) => void
 }
 
 export interface InterServerEvents {
@@ -242,6 +266,105 @@ export function initializeSocketHandlers(
 
       // Clean up participants tracking
       sessionParticipants.delete(sessionId)
+    })
+
+    /**
+     * Handle WebRTC offer signaling
+     */
+    socket.on('webrtc-offer', ({ sessionId, targetUserId, offer }) => {
+      if (!sessionId || !targetUserId || !offer) {
+        socket.emit('error', {
+          code: 'INVALID_PAYLOAD',
+          message: 'Missing required fields: sessionId, targetUserId, or offer',
+        })
+        return
+      }
+
+      const { userId } = socket.data
+
+      // Find target user's socket
+      const participants = sessionParticipants.get(sessionId)
+      const targetParticipant = participants?.get(targetUserId)
+
+      if (!targetParticipant) {
+        socket.emit('error', {
+          code: 'USER_NOT_FOUND',
+          message: 'Target user is not in this session',
+        })
+        return
+      }
+
+      // Send offer to target user
+      io.to(targetParticipant.socketId).emit('webrtc-offer', {
+        fromUserId: userId,
+        offer,
+      })
+    })
+
+    /**
+     * Handle WebRTC answer signaling
+     */
+    socket.on('webrtc-answer', ({ sessionId, targetUserId, answer }) => {
+      if (!sessionId || !targetUserId || !answer) {
+        socket.emit('error', {
+          code: 'INVALID_PAYLOAD',
+          message: 'Missing required fields: sessionId, targetUserId, or answer',
+        })
+        return
+      }
+
+      const { userId } = socket.data
+
+      // Find target user's socket
+      const participants = sessionParticipants.get(sessionId)
+      const targetParticipant = participants?.get(targetUserId)
+
+      if (!targetParticipant) {
+        socket.emit('error', {
+          code: 'USER_NOT_FOUND',
+          message: 'Target user is not in this session',
+        })
+        return
+      }
+
+      // Send answer to target user
+      io.to(targetParticipant.socketId).emit('webrtc-answer', {
+        fromUserId: userId,
+        answer,
+      })
+    })
+
+    /**
+     * Handle WebRTC ICE candidate signaling
+     */
+    socket.on('webrtc-ice-candidate', ({ sessionId, targetUserId, candidate }) => {
+      if (!sessionId || !targetUserId || !candidate) {
+        socket.emit('error', {
+          code: 'INVALID_PAYLOAD',
+          message: 'Missing required fields: sessionId, targetUserId, or candidate',
+        })
+        return
+      }
+
+      const { userId } = socket.data
+
+      // Find target user's socket
+      const participants = sessionParticipants.get(sessionId)
+      const targetParticipant = participants?.get(targetUserId)
+
+      if (!targetParticipant) {
+        socket.emit('error', {
+          code: 'USER_NOT_FOUND',
+          message: 'Target user is not in this session',
+        })
+        return
+      }
+
+      // Send ICE candidate to target user
+      io.to(targetParticipant.socketId).emit('webrtc-ice-candidate', {
+        fromUserId: userId,
+        candidate,
+      })
     })
 
     /**
