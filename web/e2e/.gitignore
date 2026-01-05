@@ -1,0 +1,7 @@
+# Playwright auth state files (contain session data)
+.auth/*.json
+
+# Playwright test results
+test-results/
+playwright-report/
+blob-report/
