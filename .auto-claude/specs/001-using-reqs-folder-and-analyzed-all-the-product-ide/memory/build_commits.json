@@ -144,11 +144,31 @@
       "hash": "dbb4788bc438036fcae13f5365e1ae4773e5dd4b",
       "subtask_id": "subtask-8-2",
       "timestamp": "2026-01-05T20:15:36.219643"
+    },
+    {
+      "hash": "2383a891217337f696b171c96dfadda0bc56a29f",
+      "subtask_id": "subtask-8-3",
+      "timestamp": "2026-01-05T20:18:51.206415"
+    },
+    {
+      "hash": "391e40ad18b35e62b67783516e268d518fbf33d3",
+      "subtask_id": "subtask-8-4",
+      "timestamp": "2026-01-05T20:22:32.842064"
+    },
+    {
+      "hash": "e2082a5d5ee44aef60d9b0ab3b701e6389a45186",
+      "subtask_id": "subtask-8-5",
+      "timestamp": "2026-01-05T20:27:15.309192"
+    },
+    {
+      "hash": "d171be7e1bc2f1b39024ac15cc94bb7b60fe6638",
+      "subtask_id": "subtask-9-1",
+      "timestamp": "2026-01-05T20:28:59.233549"
     }
   ],
-  "last_good_commit": "dbb4788bc438036fcae13f5365e1ae4773e5dd4b",
+  "last_good_commit": "d171be7e1bc2f1b39024ac15cc94bb7b60fe6638",
   "metadata": {
     "created_at": "2026-01-05T18:52:40.928457",
-    "last_updated": "2026-01-05T20:15:36.219648"
+    "last_updated": "2026-01-05T20:28:59.233557"
   }
 }

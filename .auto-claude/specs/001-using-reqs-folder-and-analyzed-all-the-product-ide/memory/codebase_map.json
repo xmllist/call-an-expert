@@ -89,7 +89,32 @@
       "description": "Socket.io client singleton with typed events. Uses getSocket() for lazy initialization, connect()/disconnect() for connection management. autoConnect: false for manual control. Provides helper functions: joinSession(), leaveSession(), sendMessage(), sendTypingIndicator(), endSession(). WebRTC signaling: sendWebRTCOffer/Answer(), sendIceCandidate(). Event subscriptions: subscribeToSessionEvents(), subscribeToWebRTCEvents() return cleanup functions for React useEffect. Types (ServerToClientEvents, ClientToServerEvents) match server/src/socket.ts exactly.",
       "category": "socket",
       "discovered_at": "2026-01-05T13:12:12.572241+00:00"
+    },
+    "web/components/session/Chat.tsx": {
+      "description": "Chat component using Socket.io client. Uses subscribeToSessionEvents() for real-time events (new-message, typing, user-joined/left, session-ended). Features: typing indicators with 2s debounce, connection status display, error handling with retry, Enter to send/Shift+Enter for newline. Receives initialMessages prop for pre-loaded history.",
+      "category": "component",
+      "discovered_at": "2026-01-05T13:18:41.784133+00:00"
+    },
+    "web/components/session/ScreenShare.tsx": {
+      "description": "ScreenShare component with full WebRTC integration. Uses createManagedPeerConnection() from lib/webrtc/peer.ts for RTCPeerConnection management. Signaling via Socket.io: sendWebRTCOffer(), sendWebRTCAnswer(), sendIceCandidate(). Handles offer/answer flow for both initiator and receiver. ICE candidates queued until remote description set. Includes connection stats polling with getConnectionStats() and parseConnectionStats(). Browser compatibility checked with isWebRTCSupported(). Screen capture via startScreenShare(quality) from peer.ts. ScreenShareButton exported for toolbar use.",
+      "category": "component",
+      "discovered_at": "2026-01-05T13:22:23.387426+00:00"
+    },
+    "web/app/session/[id]/page.tsx": {
+      "description": "Session room page combining Chat and ScreenShare components with SessionTimer. Client component that fetches session data, handles authorization (user/expert access only), loads message history, manages Socket.io connection for real-time events, and WebRTC signaling for screen sharing. Mobile responsive with view mode switcher for chat/video. Includes collapsible help request context panel.",
+      "category": "component",
+      "discovered_at": "2026-01-05T13:26:58.693202+00:00"
+    },
+    "web/components/session/SessionTimer.tsx": {
+      "description": "SessionTimer component displays countdown timer for session duration. Takes durationMinutes and startedAt props, calculates remaining time in real-time. Provides callbacks for onWarning (2 minutes remaining by default) and onTimeUp. Visual indicators change color from neutral to yellow (warning) to red (ended). Also exports CompactTimer for use in toolbars.",
+      "category": "component",
+      "discovered_at": "2026-01-05T13:26:58.707225+00:00"
+    },
+    "web/lib/stripe/server.ts": {
+      "description": "Stripe server-side configuration using stripe SDK with singleton pattern. Uses STRIPE_SECRET_KEY (server-only), STRIPE_WEBHOOK_SECRET for webhook verification. Includes getStripeServer() singleton, constructWebhookEvent() helper for webhook signature verification, calculateFees() for 10% platform fee calculation, formatAmount() for currency display. API version 2024-12-18.acacia. CRITICAL: Never import in client components.",
+      "category": "configuration",
+      "discovered_at": "2026-01-05T13:28:50.893087+00:00"
     }
   },
-  "last_updated": "2026-01-05T13:12:12.572262+00:00"
+  "last_updated": "2026-01-05T13:28:50.893117+00:00"
 }
