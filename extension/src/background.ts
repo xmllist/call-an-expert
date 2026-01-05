@@ -7,8 +7,27 @@
  * - Authentication state management via chrome.storage
  */
 
-// Configuration
-const API_BASE_URL = 'http://localhost:3000'
+import {
+  // Auth utilities
+  AuthTokens,
+  getAuthTokens,
+  setAuthTokens,
+  clearAuthTokens,
+  isAuthenticated,
+  // API functions
+  createHelpRequest,
+  getUserProfile,
+  getHelpRequests,
+  getMatchedExperts,
+  getSessions,
+  getSession,
+  getSubscription,
+  // URL utilities
+  getApiBaseUrl,
+  getDashboardUrl,
+  getLoginUrl,
+  getSessionUrl,
+} from './api'
 
 // Types for messages
 interface HelpRequestPayload {
@@ -33,107 +52,12 @@ interface MessageResponse {
   error?: string
 }
 
-interface AuthTokens {
-  accessToken: string
-  refreshToken: string
-  expiresAt: number
-}
-
-// Storage keys
-const STORAGE_KEYS = {
-  AUTH_TOKENS: 'auth_tokens',
-  USER_ID: 'user_id',
-} as const
-
-/**
- * Get stored authentication tokens from chrome.storage.local
- */
-async function getAuthTokens(): Promise<AuthTokens | null> {
-  const result = await chrome.storage.local.get(STORAGE_KEYS.AUTH_TOKENS)
-  return result[STORAGE_KEYS.AUTH_TOKENS] || null
-}
-
-/**
- * Store authentication tokens in chrome.storage.local
- */
-async function setAuthTokens(tokens: AuthTokens): Promise<void> {
-  await chrome.storage.local.set({ [STORAGE_KEYS.AUTH_TOKENS]: tokens })
-}
-
-/**
- * Clear stored authentication tokens
- */
-async function clearAuthTokens(): Promise<void> {
-  await chrome.storage.local.remove([STORAGE_KEYS.AUTH_TOKENS, STORAGE_KEYS.USER_ID])
-}
-
-/**
- * Check if the current auth tokens are valid (not expired)
- */
-async function isAuthenticated(): Promise<boolean> {
-  const tokens = await getAuthTokens()
-  if (!tokens) return false
-
-  // Check if token is expired (with 5 minute buffer)
-  const now = Date.now()
-  const bufferMs = 5 * 60 * 1000
-  return tokens.expiresAt > now + bufferMs
-}
-
-/**
- * Make an authenticated API request to the backend
- */
-async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<{ data?: T; error?: string }> {
-  const tokens = await getAuthTokens()
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
-  }
-
-  if (tokens?.accessToken) {
-    headers['Authorization'] = `Bearer ${tokens.accessToken}`
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      return {
-        error: errorData.message || errorData.error || `Request failed with status ${response.status}`
-      }
-    }
-
-    const data = await response.json()
-    return { data }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Network error occurred'
-    return { error: errorMessage }
-  }
-}
-
 /**
  * Submit a help request to the backend API
  */
 async function submitHelpRequest(payload: HelpRequestPayload): Promise<MessageResponse> {
-  // Check authentication first
-  const authenticated = await isAuthenticated()
-  if (!authenticated) {
-    return {
-      success: false,
-      error: 'Please log in to submit a help request. Visit the dashboard to sign in.',
-    }
-  }
-
-  // Prepare the request body
-  const requestBody = {
+  // Prepare the request body for the API
+  const requestPayload = {
     title: payload.title,
     description: payload.description,
     screenshot_url: payload.screenshot, // Will be processed by backend
@@ -144,10 +68,7 @@ async function submitHelpRequest(payload: HelpRequestPayload): Promise<MessageRe
     } : null,
   }
 
-  const { data, error } = await apiRequest<{ id: string }>('/api/help-request', {
-    method: 'POST',
-    body: JSON.stringify(requestBody),
-  })
+  const { data, error } = await createHelpRequest(requestPayload)
 
   if (error) {
     return { success: false, error }
@@ -159,8 +80,8 @@ async function submitHelpRequest(payload: HelpRequestPayload): Promise<MessageRe
 /**
  * Get the current user's profile
  */
-async function getUserProfile(): Promise<MessageResponse> {
-  const { data, error } = await apiRequest('/api/user/profile')
+async function fetchUserProfile(): Promise<MessageResponse> {
+  const { data, error } = await getUserProfile()
 
   if (error) {
     return { success: false, error }
@@ -201,7 +122,7 @@ async function handleLogout(): Promise<MessageResponse> {
  */
 async function openDashboard(): Promise<MessageResponse> {
   try {
-    await chrome.tabs.create({ url: `${API_BASE_URL}/dashboard` })
+    await chrome.tabs.create({ url: getDashboardUrl() })
     return { success: true }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to open dashboard'
@@ -214,7 +135,7 @@ async function openDashboard(): Promise<MessageResponse> {
  */
 async function openLogin(): Promise<MessageResponse> {
   try {
-    await chrome.tabs.create({ url: `${API_BASE_URL}/login` })
+    await chrome.tabs.create({ url: getLoginUrl() })
     return { success: true }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to open login page'
@@ -252,7 +173,7 @@ chrome.runtime.onMessage.addListener(
           return submitHelpRequest(request.payload as HelpRequestPayload)
 
         case 'GET_USER_PROFILE':
-          return getUserProfile()
+          return fetchUserProfile()
 
         case 'AUTH_CALLBACK':
           return handleAuthCallback(request.payload as AuthTokens)
@@ -295,7 +216,7 @@ chrome.runtime.onMessage.addListener(
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     // Open onboarding page on first install
-    chrome.tabs.create({ url: `${API_BASE_URL}/welcome?source=extension` })
+    chrome.tabs.create({ url: `${getApiBaseUrl()}/welcome?source=extension` })
   }
 })
 
@@ -307,7 +228,10 @@ chrome.runtime.onMessageExternal.addListener(
     sendResponse: (response: MessageResponse) => void
   ): boolean => {
     // Only accept messages from our web app
+    // Include the configured API base URL and production domains
+    const apiBaseOrigin = new URL(getApiBaseUrl()).origin
     const allowedOrigins = [
+      apiBaseOrigin,
       'http://localhost:3000',
       'https://last20.app',
       'https://www.last20.app',
