@@ -1,0 +1,35 @@
+# Supabase local development files
+.branches/
+.temp/
+.env
+.env.local
+
+# Supabase generated types (regenerate with supabase gen types)
+types/
+
+# Local database data
+.supabase/
+
+# Docker volumes
+docker/volumes/
+
+# Backup files
+*.backup
+*.dump
+
+# Temporary SQL files
+*.tmp.sql
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Generated seed data (if sensitive)
+# seed.sql

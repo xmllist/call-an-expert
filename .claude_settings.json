@@ -1,0 +1,34 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/Users/bobacu/test/callAnExpert/.worktrees/001-using-reqs-folder-and-analyzed-all-the-product-ide/**)",
+      "Write(/Users/bobacu/test/callAnExpert/.worktrees/001-using-reqs-folder-and-analyzed-all-the-product-ide/**)",
+      "Edit(/Users/bobacu/test/callAnExpert/.worktrees/001-using-reqs-folder-and-analyzed-all-the-product-ide/**)",
+      "Glob(/Users/bobacu/test/callAnExpert/.worktrees/001-using-reqs-folder-and-analyzed-all-the-product-ide/**)",
+      "Grep(/Users/bobacu/test/callAnExpert/.worktrees/001-using-reqs-folder-and-analyzed-all-the-product-ide/**)",
+      "Read(/Users/bobacu/test/callAnExpert/.worktrees/001-using-reqs-folder-and-analyzed-all-the-product-ide/.auto-claude/specs/001-using-reqs-folder-and-analyzed-all-the-product-ide/**)",
+      "Write(/Users/bobacu/test/callAnExpert/.worktrees/001-using-reqs-folder-and-analyzed-all-the-product-ide/.auto-claude/specs/001-using-reqs-folder-and-analyzed-all-the-product-ide/**)",
+      "Edit(/Users/bobacu/test/callAnExpert/.worktrees/001-using-reqs-folder-and-analyzed-all-the-product-ide/.auto-claude/specs/001-using-reqs-folder-and-analyzed-all-the-product-ide/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}

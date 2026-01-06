@@ -1,0 +1,63 @@
+{
+  "critique_completed": true,
+  "issues_found": [
+    {
+      "severity": "high",
+      "category": "accuracy",
+      "description": "Supabase server-side cookie handling would throw errors in Server Components due to read-only cookie context",
+      "location": "Lines 264-268 (Supabase Server Pattern)",
+      "fix_applied": "Wrapped setAll() in try/catch with explanatory comment about Server Component compatibility",
+      "verified": true
+    },
+    {
+      "severity": "medium",
+      "category": "completeness",
+      "description": "Missing @supabase/supabase-js package mention - spec only showed @supabase/ssr but both packages are needed",
+      "location": "Lines 280-285 (Supabase Key Points)",
+      "fix_applied": "Added explicit install command showing both packages: npm install @supabase/supabase-js @supabase/ssr",
+      "verified": true
+    },
+    {
+      "severity": "low",
+      "category": "completeness",
+      "description": "Missing Socket.io server-side pattern - only client pattern was provided",
+      "location": "Patterns section (after Supabase Client Pattern)",
+      "fix_applied": "Added complete Socket.io Server Pattern with CORS config, room-based messaging, and connection handling",
+      "verified": true
+    },
+    {
+      "severity": "low",
+      "category": "completeness",
+      "description": "Missing Stripe webhook verification pattern - file was listed but no code example for critical security verification",
+      "location": "After Stripe Payment Intent Pattern",
+      "fix_applied": "Added complete Stripe Webhook Pattern with signature verification, event handling for payments and subscriptions",
+      "verified": true
+    },
+    {
+      "severity": "low",
+      "category": "completeness",
+      "description": "Missing server/socket.ts in Files to Modify table",
+      "location": "Files to Modify table",
+      "fix_applied": "Added server/socket.ts as real-time service file",
+      "verified": true
+    }
+  ],
+  "issues_fixed": true,
+  "no_issues_found": false,
+  "critique_summary": "Found 5 issues: 1 high severity (Supabase cookie handling bug that would cause runtime errors), 1 medium severity (missing package dependency), and 3 low severity (missing code patterns for Socket.io server, Stripe webhooks, and file list update). All issues have been fixed. The spec now includes proper try/catch handling for Supabase cookies, explicit package installation instructions, complete Socket.io server and client patterns, and comprehensive Stripe webhook verification pattern. The spec is technically accurate and complete.",
+  "confidence_level": "high",
+  "recommendations": [
+    "Consider adding Supabase middleware pattern for session refresh on navigation",
+    "Consider documenting TURN server setup for production WebRTC reliability",
+    "Consider adding rate limiting patterns for API routes"
+  ],
+  "validation_checks": {
+    "overview_section": true,
+    "requirements_section": true,
+    "success_criteria_section": true,
+    "packages_match_research": true,
+    "api_patterns_verified": true,
+    "security_requirements_addressed": true
+  },
+  "created_at": "2026-01-05T18:30:00Z"
+}

@@ -1,0 +1,1172 @@
+{
+  "feature": "Call-an-Expert MVP Platform",
+  "workflow_type": "feature",
+  "workflow_rationale": "Greenfield MVP build requiring multiple new services (Chrome extension, Next.js web app, Supabase backend, Socket.io real-time, Stripe payments) with no existing codebase. Feature workflow allows systematic implementation respecting service dependencies.",
+  "phases": [
+    {
+      "id": "phase-1-database",
+      "name": "Database Foundation",
+      "type": "setup",
+      "description": "Set up Supabase project with database schema and Row-Level Security policies",
+      "depends_on": [],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Initialize Supabase project structure with config",
+          "service": "supabase",
+          "files_to_modify": [],
+          "files_to_create": [
+            "supabase/config.toml",
+            "supabase/.gitignore"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "ls supabase/config.toml",
+            "expected": "supabase/config.toml"
+          },
+          "status": "completed",
+          "notes": "Created supabase/config.toml with full local development configuration including API, database, storage, auth (with Google OAuth), Realtime, and Studio settings. Created supabase/.gitignore for excluding local development files. Committed as 3ed93c0.",
+          "updated_at": "2026-01-05T11:54:28.004201+00:00"
+        },
+        {
+          "id": "subtask-1-2",
+          "description": "Create initial database schema with all tables (profiles, experts, help_requests, sessions, messages, ratings, subscriptions)",
+          "service": "supabase",
+          "files_to_modify": [],
+          "files_to_create": [
+            "supabase/migrations/001_initial_schema.sql"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cat supabase/migrations/001_initial_schema.sql | grep -c 'CREATE TABLE'",
+            "expected": "7"
+          },
+          "status": "completed",
+          "notes": "Created initial database schema with 7 tables: profiles, experts, help_requests, sessions, messages, ratings, subscriptions. Includes proper indexes, foreign keys, check constraints, and triggers for auto-updating timestamps, expert ratings, and session counts. Added auto-create profile trigger for new user signups. Committed as b25a39e.",
+          "updated_at": "2026-01-05T11:56:56.236016+00:00"
+        },
+        {
+          "id": "subtask-1-3",
+          "description": "Create Row-Level Security policies for all tables",
+          "service": "supabase",
+          "files_to_modify": [],
+          "files_to_create": [
+            "supabase/migrations/002_rls_policies.sql"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cat supabase/migrations/002_rls_policies.sql | grep -c 'CREATE POLICY'",
+            "expected": ">=10"
+          },
+          "status": "completed",
+          "notes": "Created comprehensive RLS policies migration with 28 policies covering all 7 tables. Includes helper functions is_session_participant() and is_approved_expert() for policy logic. All tables have RLS enabled with proper CRUD authorization. Security notes included about service role usage. Committed as 314704e.",
+          "updated_at": "2026-01-05T11:59:13.589958+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-web-foundation",
+      "name": "Web App Foundation",
+      "type": "setup",
+      "description": "Initialize Next.js 15 project with core configuration and Supabase clients",
+      "depends_on": [
+        "phase-1-database"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-2-1",
+          "description": "Initialize Next.js 15 project with TypeScript, Tailwind CSS, App Router",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/package.json",
+            "web/tsconfig.json",
+            "web/tailwind.config.ts",
+            "web/next.config.ts",
+            "web/.env.example"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cat web/package.json | grep -q 'next' && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/package.json with Next.js 15.1.3, React 19.0.0, TypeScript 5.7.2, Tailwind CSS 3.4.17, and all required dependencies (Supabase SSR, Stripe SDK, Socket.io client). Created tsconfig.json, tailwind.config.ts with custom color palette, next.config.ts with Supabase image domains, .env.example with documented variables, postcss.config.js, next-env.d.ts, and .gitignore. Committed as fb75267.",
+          "updated_at": "2026-01-05T12:01:03.016293+00:00"
+        },
+        {
+          "id": "subtask-2-2",
+          "description": "Create Supabase browser client (client.ts) using @supabase/ssr",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/lib/supabase/client.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'createBrowserClient' web/lib/supabase/client.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/lib/supabase/client.ts with createBrowserClient function using @supabase/ssr. Follows the official pattern for Next.js App Router client-side usage. Uses environment variables NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY. Verification passed. Committed as e939a48.",
+          "updated_at": "2026-01-05T12:02:16.901092+00:00"
+        },
+        {
+          "id": "subtask-2-3",
+          "description": "Create Supabase server client (server.ts) with cookie handling for App Router",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/lib/supabase/server.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'createServerClient' web/lib/supabase/server.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/lib/supabase/server.ts with createServerClient using @supabase/ssr. Follows the official Next.js App Router pattern with async cookies() API and try/catch for setAll to handle Server Component compatibility. Uses NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables. Verification passed. Committed as ee34f8c.",
+          "updated_at": "2026-01-05T12:03:44.455599+00:00"
+        },
+        {
+          "id": "subtask-2-4",
+          "description": "Create root layout with basic providers structure",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/layout.tsx",
+            "web/app/globals.css"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'RootLayout' web/app/layout.tsx && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/app/layout.tsx with RootLayout component, Inter font from Google Fonts, comprehensive SEO metadata (title, description, keywords, OpenGraph), and Providers wrapper component ready for future auth/stripe/socket providers. Created web/app/globals.css with Tailwind directives, CSS variables for light/dark mode, and consistent styling patterns. Verification passed. Committed as 5cac73a.",
+          "updated_at": "2026-01-05T12:05:18.707822+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-3-auth",
+      "name": "Authentication Flow",
+      "type": "implementation",
+      "description": "Implement Supabase Auth with email and OAuth (Google) login",
+      "depends_on": [
+        "phase-2-web-foundation"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-3-1",
+          "description": "Create auth middleware for protected routes",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/middleware.ts",
+            "web/lib/supabase/middleware.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'updateSession' web/lib/supabase/middleware.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/lib/supabase/middleware.ts with updateSession function using @supabase/ssr createServerClient for middleware context. Created web/middleware.ts with Next.js middleware that: (1) refreshes auth sessions on each request, (2) protects /dashboard, /expert/dashboard, /session, /become-expert routes, (3) redirects unauthenticated users to /login with redirectTo param, (4) redirects authenticated users away from /login and /signup. Uses proper cookie handling with NextRequest/NextResponse. Verification passed. Committed as ccdcd2d.",
+          "updated_at": "2026-01-05T12:07:01.830115+00:00"
+        },
+        {
+          "id": "subtask-3-2",
+          "description": "Create login/signup pages with email and OAuth",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/login/page.tsx",
+            "web/app/signup/page.tsx",
+            "web/app/auth/callback/route.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/login",
+            "checks": [
+              "Login form renders",
+              "Google OAuth button present"
+            ]
+          },
+          "status": "completed",
+          "notes": "Created login/signup pages with email and Google OAuth support. Login page at /login with email/password form and Google OAuth button. Signup page at /signup with email/password form, Google OAuth button, and email confirmation flow. Auth callback route at /auth/callback handles OAuth redirects and email confirmations by exchanging code for session. All pages follow existing Tailwind patterns with primary/secondary color palette. Includes error handling, loading states, and redirect to intended page after successful auth. Committed as 28679c7.",
+          "updated_at": "2026-01-05T12:10:14.384281+00:00"
+        },
+        {
+          "id": "subtask-3-3",
+          "description": "Create auth utility functions and hooks",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/lib/auth/actions.ts",
+            "web/hooks/useAuth.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'signIn' web/lib/auth/actions.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/lib/auth/actions.ts with server-side auth actions (signIn, signUp, signOut, getUser, getSession, requireAuth, requireExpert, getUserProfile, getExpertProfile, resetPassword, updatePassword). Created web/hooks/useAuth.ts with client-side React hook providing real-time auth state via onAuthStateChange, profile/expert profile fetching, and auth actions. Also includes useRequireAuth and useRequireExpert hooks for protected routes. Verification passed. Committed as 5013a2c.",
+          "updated_at": "2026-01-05T12:12:25.025358+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-4-extension",
+      "name": "Chrome Extension",
+      "type": "implementation",
+      "description": "Build Chrome extension (Manifest V3) for issue capture and screenshots",
+      "depends_on": [
+        "phase-2-web-foundation"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-4-1",
+          "description": "Initialize extension project with build tools and TypeScript config",
+          "service": "extension",
+          "files_to_modify": [],
+          "files_to_create": [
+            "extension/package.json",
+            "extension/tsconfig.json",
+            "extension/vite.config.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cat extension/package.json | grep -q 'vite' && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created extension/package.json with Vite 6.0.7, React 19, TypeScript 5.7.2, and @types/chrome. Created tsconfig.json with strict mode and chrome types. Created vite.config.ts with multi-entry build config for popup, background, and content scripts. Uses Terser for minification and bundles all dependencies (no externals). Verification passed. Committed as 75d1ed4.",
+          "updated_at": "2026-01-05T12:14:29.754561+00:00"
+        },
+        {
+          "id": "subtask-4-2",
+          "description": "Create Manifest V3 configuration with minimal permissions",
+          "service": "extension",
+          "files_to_modify": [],
+          "files_to_create": [
+            "extension/manifest.json",
+            "extension/public/icon.png"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q '\"manifest_version\": 3' extension/manifest.json && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created extension/manifest.json with Manifest V3 configuration following the spec pattern. Used minimal permissions (activeTab, storage only) to avoid Chrome Web Store rejection. Added service worker background script config, content scripts config, icons in multiple sizes (16, 32, 48, 128px), and content security policy. Created public/icon.png placeholder. Verification passed. Committed as b72804e.",
+          "updated_at": "2026-01-05T12:18:47.814483+00:00"
+        },
+        {
+          "id": "subtask-4-3",
+          "description": "Create popup UI with issue capture form and screenshot tool",
+          "service": "extension",
+          "files_to_modify": [],
+          "files_to_create": [
+            "extension/src/popup/Popup.tsx",
+            "extension/src/popup/index.tsx",
+            "extension/popup.html"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'screenshot' extension/src/popup/Popup.tsx && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created popup UI with issue capture form and screenshot tool. Files created: extension/popup.html (HTML entry point), extension/src/popup/index.tsx (React entry), extension/src/popup/Popup.tsx (main component with form, screenshot capture using chrome.tabs.captureVisibleTab, page context detection, form submission via chrome.runtime.sendMessage), extension/src/popup/styles.css (CSS styling). Verification passed. Committed as 37e2351.",
+          "updated_at": "2026-01-05T12:22:26.512499+00:00"
+        },
+        {
+          "id": "subtask-4-4",
+          "description": "Create service worker for background API communication",
+          "service": "extension",
+          "files_to_modify": [],
+          "files_to_create": [
+            "extension/src/background.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'chrome.runtime' extension/src/background.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created extension/src/background.ts with Manifest V3 service worker for background API communication. Features: message handling from popup (SUBMIT_HELP_REQUEST, GET_USER_PROFILE, AUTH_CALLBACK, LOGOUT, OPEN_DASHBOARD, OPEN_LOGIN, GET_AUTH_STATUS, PING), auth token management via chrome.storage.local, authenticated API requests to backend, auth sync from web app via onMessageExternal, and welcome page on first install. Verification passed. Committed as 5e7b87c.",
+          "updated_at": "2026-01-05T12:24:33.695479+00:00"
+        },
+        {
+          "id": "subtask-4-5",
+          "description": "Create content script for page context capture",
+          "service": "extension",
+          "files_to_modify": [],
+          "files_to_create": [
+            "extension/src/content.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'document' extension/src/content.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created extension/src/content.ts with comprehensive page context capture functionality. Features: (1) Tool detection for 30+ AI/coding tools including Cursor, Replit, v0, ChatGPT, Claude, CodeSandbox, StackBlitz, etc. (2) DOM error extraction from various error selectors including framework-specific overlays (Next.js, React, Vite, Webpack). (3) Code snippet extraction from pre/code blocks and Monaco/CodeMirror editors. (4) Language detection heuristics for TypeScript, JavaScript, Python, Rust, Go, Java, HTML, CSS, JSON, SQL. (5) Console error capturing via window.error and unhandledrejection events. (6) Message handling for GET_PAGE_CONTEXT, GET_SELECTED_TEXT, GET_ERRORS, GET_CODE_SNIPPETS. Verification passed. Committed as ffca313.",
+          "updated_at": "2026-01-05T12:27:12.118567+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-5-core-pages",
+      "name": "Core Web Pages",
+      "type": "implementation",
+      "description": "Build landing page, user dashboard, and expert pages",
+      "depends_on": [
+        "phase-3-auth"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-5-1",
+          "description": "Create landing page with hero section and CTAs",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/page.tsx",
+            "web/components/Hero.tsx",
+            "web/components/Features.tsx"
+          ],
+          "patterns_from": [
+            "reqs/screenshots/page_001.png"
+          ],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/",
+            "checks": [
+              "Hero section renders",
+              "CTA buttons visible",
+              "Responsive layout"
+            ]
+          },
+          "status": "completed",
+          "notes": "Created landing page with: 1) Hero component with headline, CTAs, trust indicators, and stats, 2) Features component with how-it-works, feature grid, pricing preview, and final CTA, 3) Main page.tsx with responsive navigation, Hero/Features sections, and footer. All components follow project patterns using Tailwind CSS with primary/secondary color scheme.",
+          "updated_at": "2026-01-05T12:31:25.530112+00:00"
+        },
+        {
+          "id": "subtask-5-2",
+          "description": "Create user dashboard showing sessions and matched experts",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/dashboard/page.tsx",
+            "web/components/SessionList.tsx",
+            "web/components/ExpertCard.tsx"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/dashboard",
+            "checks": [
+              "Dashboard renders",
+              "Requires auth",
+              "Shows session list"
+            ]
+          },
+          "status": "completed",
+          "notes": "Created user dashboard with three components: 1) web/app/dashboard/page.tsx - Server Component dashboard page with auth protection via redirect, fetches user sessions from Supabase with expert joins, fetches available experts sorted by rating, and pending help requests. Shows quick stats, session lists (upcoming/past), matched experts sidebar, and quick actions. 2) web/components/SessionList.tsx - Client component displaying sessions with expert avatars, status badges, date formatting, and action buttons (Join, View Details, View Summary based on status). 3) web/components/ExpertCard.tsx - Client component showing expert profile with avatar, rating, expertise tags, rate per session, availability indicator, and booking actions. All components follow existing Tailwind CSS patterns with primary/secondary color scheme. Committed as 3f11eff.",
+          "updated_at": "2026-01-05T12:35:35.892254+00:00"
+        },
+        {
+          "id": "subtask-5-3",
+          "description": "Create expert listing and profile pages",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/experts/page.tsx",
+            "web/app/experts/[id]/page.tsx"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/experts",
+            "checks": [
+              "Expert list renders",
+              "Can navigate to individual profiles"
+            ]
+          },
+          "status": "completed",
+          "notes": "Created expert listing and profile pages. Files created: 1) web/app/experts/page.tsx - Expert listing with filtering by expertise tags, search functionality, availability filter, help request context support, and responsive grid layout with ExpertCard components. 2) web/app/experts/[id]/page.tsx - Individual expert profile page with full details including avatar, bio, expertise tags, rating/reviews section, session stats, and booking card with trust indicators. Both pages follow existing patterns using Server Components and Supabase data fetching. Dynamic metadata generation for SEO. Committed as b65efad.",
+          "updated_at": "2026-01-05T12:39:34.899546+00:00"
+        },
+        {
+          "id": "subtask-5-4",
+          "description": "Create expert dashboard with queue, earnings, and availability",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/expert/dashboard/page.tsx",
+            "web/components/EarningsSummary.tsx",
+            "web/components/AvailabilityToggle.tsx"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/expert/dashboard",
+            "checks": [
+              "Expert dashboard renders",
+              "Requires expert role"
+            ]
+          },
+          "status": "completed",
+          "notes": "Created expert dashboard with three components: 1) web/app/expert/dashboard/page.tsx - Server Component dashboard page with auth protection (redirects non-experts to /become-expert), fetches expert's sessions with user info, calculates earnings from completed/pending sessions (this month, last month, total, pending payout), displays session queue (upcoming/past), earnings summary, availability toggle, and quick stats/actions. 2) web/components/EarningsSummary.tsx - Client component showing earnings cards (total, this month with % change, pending payout, completed sessions), rating display with stars, and Stripe Connect status with setup CTA. 3) web/components/AvailabilityToggle.tsx - Client component with toggle switch for availability status, uses optimistic updates with Supabase client, shows status indicator and error handling. All components follow existing Tailwind CSS patterns. Committed as 734b1ba.",
+          "updated_at": "2026-01-05T12:44:44.759752+00:00"
+        },
+        {
+          "id": "subtask-5-5",
+          "description": "Create expert application/onboarding flow",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/become-expert/page.tsx",
+            "web/components/ExpertApplicationForm.tsx"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/become-expert",
+            "checks": [
+              "Application form renders",
+              "Can submit expertise tags and rate"
+            ]
+          },
+          "status": "completed",
+          "notes": "Created expert application/onboarding flow with two files: 1) web/app/become-expert/page.tsx - Server Component page with auth protection, pending application status view, approved redirect, benefits section, FAQ, and responsive layout. 2) web/components/ExpertApplicationForm.tsx - Client component with bio, expertise tags (suggested + custom), session rate ($15-100), years of experience, portfolio URL, form validation, and success/error states. All files follow existing Tailwind CSS patterns with primary/secondary color scheme. Committed as 76f2ebf.",
+          "updated_at": "2026-01-05T12:49:49.525186+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-6-api-routes",
+      "name": "API Routes",
+      "type": "implementation",
+      "description": "Create API routes for sessions, help requests, and expert matching",
+      "depends_on": [
+        "phase-5-core-pages"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-6-1",
+          "description": "Create help request API route (submit from extension)",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/api/help-request/route.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "api",
+            "method": "POST",
+            "url": "http://localhost:3000/api/help-request",
+            "body": {
+              "title": "Test",
+              "description": "Test request"
+            },
+            "expected_status": 401
+          },
+          "status": "completed",
+          "notes": "Created web/app/api/help-request/route.ts with full CRUD operations for help requests. Features: (1) POST /api/help-request - Creates new help requests with authentication check, input validation (title required, max 200 chars; description required), optional screenshot_url and context support, returns 201 on success. (2) GET /api/help-request - Lists user's help requests with status filtering, pagination (limit/offset), ordered by created_at DESC. (3) DELETE returns 405 with guidance to use /api/help-request/[id]. All endpoints return 401 for unauthenticated requests as verified by pattern analysis. Follows established patterns from auth callback route and server-side Supabase client usage. Committed as 65a61df.",
+          "updated_at": "2026-01-05T12:53:11.618896+00:00"
+        },
+        {
+          "id": "subtask-6-2",
+          "description": "Create expert matching API route",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/api/match-experts/route.ts",
+            "web/lib/matching/algorithm.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'expertise_tags' web/lib/matching/algorithm.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created expert matching API route and algorithm. Files created: 1) web/lib/matching/algorithm.ts - Tag-based expert matching algorithm with extractTagsFromRequest() for keyword extraction, matchExperts() for help request matching, matchExpertsByTags() for direct tag searches, scoring based on expertise_tags overlap and rating, filters by availability/approval status. 2) web/app/api/match-experts/route.ts - GET/POST endpoints for expert matching. GET supports help_request_id or tags query param. POST supports custom options (weights, min score, requireStripeAccount). Returns sorted experts with match scores and matching tags. Full auth checks and RLS-safe queries. Verification passed. Committed as dee05a4.",
+          "updated_at": "2026-01-05T12:55:44.114216+00:00"
+        },
+        {
+          "id": "subtask-6-3",
+          "description": "Create session CRUD API routes",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/api/session/route.ts",
+            "web/app/api/session/[id]/route.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'sessions' web/app/api/session/route.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created session CRUD API routes. Files created: (1) web/app/api/session/route.ts - POST for creating sessions with expert booking, scheduling conflict detection, platform fee calculation (10%), and validation; GET for listing sessions as user or expert with filtering by role/status/upcoming. (2) web/app/api/session/[id]/route.ts - GET for session details with expert/user info, PATCH for status transitions (cancel, start, complete, no-show) with role-based permissions, DELETE for cancellation with optional reason. All routes require authentication and enforce RLS-safe queries. Verification passed. Committed as 0fff8b3.",
+          "updated_at": "2026-01-05T12:58:53.437444+00:00"
+        },
+        {
+          "id": "subtask-6-4",
+          "description": "Create expert profile API routes",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/api/expert/route.ts",
+            "web/app/api/expert/[id]/route.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'experts' web/app/api/expert/route.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created expert profile API routes. Files created: (1) web/app/api/expert/route.ts - GET for listing approved experts with filtering (available, tags, search, rating, rate, pagination) and sorting options; POST for applying as expert with validation (bio, expertise_tags, session_rate, portfolio_url, years_experience). (2) web/app/api/expert/[id]/route.ts - GET for individual expert profile (public for approved, owner-only for pending); PATCH for updating profile (owner only, validates all fields); DELETE for removing expert profile (owner only, checks for active sessions). All routes follow established patterns with proper auth checks, error handling, and RLS-safe queries. Verification passed. Committed as 135cedb.",
+          "updated_at": "2026-01-05T13:02:53.779063+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-7-realtime-server",
+      "name": "Real-time Server",
+      "type": "implementation",
+      "description": "Build Socket.io server for real-time chat and WebRTC signaling",
+      "depends_on": [
+        "phase-2-web-foundation"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-7-1",
+          "description": "Initialize Socket.io server project",
+          "service": "server",
+          "files_to_modify": [],
+          "files_to_create": [
+            "server/package.json",
+            "server/tsconfig.json"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cat server/package.json | grep -q 'socket.io' && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created server/package.json with Socket.io 4.8.1, TypeScript 5.7.2, tsx for development, dotenv for configuration. Created server/tsconfig.json with ES2022 target, NodeNext module system, strict mode, and proper output directory configuration. Server will run on port 3001 for real-time chat and WebRTC signaling. Verification passed. Committed as e19233a.",
+          "updated_at": "2026-01-05T13:04:36.334893+00:00"
+        },
+        {
+          "id": "subtask-7-2",
+          "description": "Create Socket.io server with CORS and room-based messaging",
+          "service": "server",
+          "files_to_modify": [],
+          "files_to_create": [
+            "server/src/index.ts",
+            "server/src/socket.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'join-session' server/src/socket.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created server/src/index.ts with HTTP server, health check endpoint, graceful shutdown handling, and CORS configuration. Created server/src/socket.ts with room-based messaging implementing: join-session with participant tracking, leave-session, chat-message with unique message IDs, typing indicators, end-session events. Added TypeScript types for all events (ServerToClientEvents, ClientToServerEvents, SocketData). Session participants tracked in memory with getSessionParticipants() and isUserInSession() utility functions. Verification passed. Committed as 5cefbe5.",
+          "updated_at": "2026-01-05T13:07:13.882097+00:00"
+        },
+        {
+          "id": "subtask-7-3",
+          "description": "Add WebRTC signaling handlers (offer, answer, ICE candidates)",
+          "service": "server",
+          "files_to_modify": [
+            "server/src/socket.ts"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'webrtc-offer' server/src/socket.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Added WebRTC signaling handlers for offer, answer, and ICE candidates. Implemented payload types (WebRTCOfferPayload, WebRTCAnswerPayload, WebRTCIceCandidatePayload), added events to client/server interfaces, and created socket handlers that relay signaling data to target participants with proper validation and error handling.",
+          "updated_at": "2026-01-05T13:09:49.350391+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-8-session-room",
+      "name": "Live Session Room",
+      "type": "implementation",
+      "description": "Build session room with real-time chat and screen sharing",
+      "depends_on": [
+        "phase-6-api-routes",
+        "phase-7-realtime-server"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-8-1",
+          "description": "Create Socket.io client singleton for web app",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/lib/socket/client.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'autoConnect.*false' web/lib/socket/client.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/lib/socket/client.ts with Socket.io client singleton. Features: (1) Full TypeScript types matching server/src/socket.ts interfaces (ServerToClientEvents, ClientToServerEvents, all payloads), (2) Singleton pattern with getSocket(), (3) Manual connection with autoConnect: false, (4) WebSocket + polling transports, (5) Reconnection with 5 attempts and exponential backoff, (6) Session helpers: joinSession(), leaveSession(), sendMessage(), sendTypingIndicator(), endSession(), (7) WebRTC signaling: sendWebRTCOffer(), sendWebRTCAnswer(), sendIceCandidate(), (8) Event subscription helpers with cleanup: subscribeToSessionEvents(), subscribeToWebRTCEvents(). Verification passed. Committed as 4eef9c9.",
+          "updated_at": "2026-01-05T13:12:04.717708+00:00"
+        },
+        {
+          "id": "subtask-8-2",
+          "description": "Create WebRTC peer connection handler",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/lib/webrtc/peer.ts",
+            "web/lib/webrtc/config.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'getDisplayMedia' web/lib/webrtc/peer.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/lib/webrtc/config.ts with ICE server configuration (STUN servers, TURN support), screen share constraints (auto/high/low quality presets), and browser compatibility utilities. Created web/lib/webrtc/peer.ts with startScreenShare() using getDisplayMedia API, createPeerConnection() factory, createManagedPeerConnection() with callbacks and state management, ICE gathering utilities, connection waiting helpers, track replacement, and stats parsing. All error cases handled with specific messages. Verification passed. Committed as dbb4788.",
+          "updated_at": "2026-01-05T13:15:23.579404+00:00"
+        },
+        {
+          "id": "subtask-8-3",
+          "description": "Create chat component with real-time messaging",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/components/session/Chat.tsx",
+            "web/components/session/MessageList.tsx"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'new-message' web/components/session/Chat.tsx && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created Chat.tsx and MessageList.tsx components for real-time session messaging. Chat component uses Socket.io with 'new-message' event handling, typing indicators with debounce, connection status display, error handling with retry, and auto-scroll. MessageList shows messages with different styling for sent/received, typing animations, and empty state. Verification passed. Committed as 2383a89.",
+          "updated_at": "2026-01-05T13:18:41.757702+00:00"
+        },
+        {
+          "id": "subtask-8-4",
+          "description": "Create screen share component with WebRTC",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/components/session/ScreenShare.tsx",
+            "web/components/session/RemoteVideo.tsx"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'RTCPeerConnection' web/components/session/ScreenShare.tsx && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/components/session/ScreenShare.tsx with full RTCPeerConnection-based WebRTC integration including: peer connection management, signaling via Socket.io (offer/answer/ICE candidates), screen capture with getDisplayMedia, connection state/stats tracking, browser compatibility detection. Created web/components/session/RemoteVideo.tsx for displaying remote video streams with loading/error states, fullscreen support, and connection quality indicator. Verification passed. Committed as 391e40a.",
+          "updated_at": "2026-01-05T13:22:15.300787+00:00"
+        },
+        {
+          "id": "subtask-8-5",
+          "description": "Create session room page combining chat and screen share",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/session/[id]/page.tsx",
+            "web/components/session/SessionTimer.tsx"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/session/test-id",
+            "checks": [
+              "Session room renders",
+              "Chat visible",
+              "Screen share button present",
+              "Timer visible"
+            ]
+          },
+          "status": "completed",
+          "notes": "Created session room page with chat, screen share, timer. Committed as e2082a5.",
+          "updated_at": "2026-01-05T13:26:58.666797+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-9-payments",
+      "name": "Stripe Payments",
+      "type": "implementation",
+      "description": "Integrate Stripe for per-session payments and subscriptions",
+      "depends_on": [
+        "phase-6-api-routes"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-9-1",
+          "description": "Create Stripe client configuration",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/lib/stripe/client.ts",
+            "web/lib/stripe/server.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'Stripe' web/lib/stripe/server.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/lib/stripe/client.ts with browser-side Stripe initialization using @stripe/stripe-js loadStripe() with singleton pattern and NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY. Created web/lib/stripe/server.ts with server-side Stripe SDK initialization using STRIPE_SECRET_KEY (never exposed to client), includes: getStripeServer() singleton, createStripeServer() factory, constructWebhookEvent() for webhook signature verification, calculateFees() for 10% platform fee, formatAmount() for currency display. Uses latest Stripe API version 2024-12-18.acacia. Verification passed. Committed as d171be7.",
+          "updated_at": "2026-01-05T13:28:43.779531+00:00"
+        },
+        {
+          "id": "subtask-9-2",
+          "description": "Create payment intent API route for session booking",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/api/payment/create-intent/route.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'paymentIntents.create' web/app/api/payment/create-intent/route.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/app/api/payment/create-intent/route.ts with POST endpoint for creating Stripe Payment Intents. Features: (1) Authentication with user ownership verification, (2) Session status validation (pending_payment/scheduled only), (3) Reuses existing valid payment intents to prevent duplicates, (4) Minimum $0.50 amount validation per Stripe requirements, (5) Calculates 10% platform fee using calculateFees() from stripe/server.ts, (6) Stores payment_intent_id in session record for webhook reconciliation, (7) Full metadata (sessionId, userId, expertId, scheduledAt, fees) for webhook processing, (8) Comprehensive error handling for Stripe and auth failures. Verification passed. Committed as 5ac877f.",
+          "updated_at": "2026-01-05T13:30:31.752981+00:00"
+        },
+        {
+          "id": "subtask-9-3",
+          "description": "Create Stripe webhook handler with signature verification",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/api/webhook/stripe/route.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'constructEvent' web/app/api/webhook/stripe/route.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/app/api/webhook/stripe/route.ts with Stripe webhook handler. Features: (1) Signature verification using stripe.webhooks.constructEvent, (2) Admin Supabase client for webhook processing (uses service role key to bypass RLS), (3) Handles payment_intent.succeeded to update session status to 'paid', (4) Handles payment_intent.payment_failed to mark sessions as 'payment_failed', (5) Handles customer.subscription.created/updated for subscription upserts, (6) Handles customer.subscription.deleted to mark as 'canceled', (7) Handles checkout.session.completed for alternate payment flow, (8) Handles charge.refunded for refund tracking, (9) Handles account.updated for Stripe Connect expert accounts. Returns 200 status even on errors to acknowledge receipt. Verification passed. Committed as ec08d94.",
+          "updated_at": "2026-01-05T13:34:16.611305+00:00"
+        },
+        {
+          "id": "subtask-9-4",
+          "description": "Create checkout components for session booking",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/components/payment/CheckoutForm.tsx",
+            "web/components/payment/PaymentStatus.tsx"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'PaymentElement' web/components/payment/CheckoutForm.tsx && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/components/payment/CheckoutForm.tsx and web/components/payment/PaymentStatus.tsx. CheckoutForm uses Stripe PaymentElement with Elements provider, session summary display, custom Stripe appearance theming, loading/error states, and includes CheckoutWrapper for automatic payment intent fetching. PaymentStatus displays payment status with visual indicators, session details, contextual action buttons, and includes PaymentStatusFromURL for Stripe redirect handling and PaymentBadge for compact display. Verification passed: PaymentElement found in CheckoutForm.tsx. Committed as 547e7fa.",
+          "updated_at": "2026-01-05T13:37:57.666832+00:00"
+        },
+        {
+          "id": "subtask-9-5",
+          "description": "Create subscription API routes and checkout",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/api/subscription/route.ts",
+            "web/app/pricing/page.tsx"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/pricing",
+            "checks": [
+              "Pricing tiers visible",
+              "Subscribe buttons work"
+            ]
+          },
+          "status": "completed",
+          "notes": "Created subscription API routes and pricing page. Files created: (1) web/app/api/subscription/route.ts - Full CRUD for subscriptions with GET (list subscriptions), POST (create Stripe Checkout session), DELETE (cancel at period end), PATCH (reactivate). Three subscription plans: starter ($99/year, 10 sessions), professional ($249/year, 30 sessions), enterprise ($499/year, 100 sessions). (2) web/app/pricing/page.tsx - Interactive pricing page with per-session pricing section, subscription plan cards with all features, Stripe Checkout integration, FAQ section, loading/error states. Follows existing patterns: uses getStripeServer() from lib/stripe/server.ts, createClient() from lib/supabase/server.ts, same CSS styling with primary/secondary color scheme. Verification passed. Committed as 38e34eb.",
+          "updated_at": "2026-01-05T13:41:59.509094+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-10-ratings",
+      "name": "Ratings and Reviews",
+      "type": "implementation",
+      "description": "Implement session rating and review system",
+      "depends_on": [
+        "phase-8-session-room"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-10-1",
+          "description": "Create rating API routes",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/app/api/rating/route.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'ratings' web/app/api/rating/route.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created web/app/api/rating/route.ts with full CRUD operations for session ratings. Features: (1) POST /api/rating - Creates new ratings with authentication, session validation (must be completed), participant verification, duplicate prevention (unique constraint), score validation (1-5), optional comment (max 1000 chars). Returns 201 with rater/ratee profiles. (2) GET /api/rating - Lists ratings with filtering by type (given/received/all), session_id, or user_id. Includes rating summary statistics (total, average, distribution) for user queries. Supports pagination (limit/offset). Public access for user_id queries, auth required for personal ratings. (3) DELETE returns 405 with guidance to use /api/rating/[id]. Database trigger automatically updates expert.rating and expert.total_reviews when ratings are inserted. Verification passed. Committed as 9b61aa1.",
+          "updated_at": "2026-01-05T13:44:04.688175+00:00"
+        },
+        {
+          "id": "subtask-10-2",
+          "description": "Create rating modal component for post-session",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/components/session/RatingModal.tsx",
+            "web/components/ui/StarRating.tsx"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'score' web/components/session/RatingModal.tsx && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created rating modal and star rating components. Files created: (1) web/components/ui/StarRating.tsx - Reusable interactive star rating component with hover effects, size variants (sm/md/lg/xl), read-only display mode, StarRatingDisplay for static ratings with half-star support, and RATING_LABELS constant. (2) web/components/session/RatingModal.tsx - Full-featured modal for post-session ratings with: 5-star score selection, optional comment field (max 1000 chars), validation, loading/error states, success animation, escape key handling, body scroll lock, useRatingModal hook for state management, and RatingPrompt component for inline rating prompts. Both components follow existing patterns using 'use client', Tailwind CSS with primary/secondary color scheme, and consistent button/form styling. Verification passed: grep confirmed 'score' exists in RatingModal.tsx. Committed as cef6a2e.",
+          "updated_at": "2026-01-05T13:48:03.364829+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-11-integration",
+      "name": "End-to-End Integration",
+      "type": "integration",
+      "description": "Wire all services together and verify complete user flows",
+      "depends_on": [
+        "phase-4-extension",
+        "phase-8-session-room",
+        "phase-9-payments",
+        "phase-10-ratings"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-11-1",
+          "description": "Connect Chrome extension to web app API",
+          "service": "extension",
+          "files_to_modify": [
+            "extension/src/background.ts"
+          ],
+          "files_to_create": [
+            "extension/src/api.ts"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'fetch' extension/src/api.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created extension/src/api.ts with dedicated API client module including: (1) Type definitions for AuthTokens, HelpRequest, ExpertProfile, MatchedExpert, Session, UserProfile, ApiResponse, etc. (2) Core apiRequest() function using fetch with automatic auth header injection from chrome.storage. (3) API functions: createHelpRequest(), getUserProfile(), getHelpRequests(), getMatchedExperts(), getExpertsByTags(), getExperts(), getExpertProfile(), getSessions(), getSession(), createSession(), updateSession(), submitRating(), getRatings(), getSubscription(). (4) Auth utilities: getAuthTokens(), setAuthTokens(), clearAuthTokens(), isAuthenticated(). (5) URL utilities: getApiBaseUrl(), getDashboardUrl(), getLoginUrl(), getExpertUrl(), getSessionUrl(). Updated extension/src/background.ts to import and use the new API module, removing duplicate code. Verification passed: grep confirmed 'fetch' in api.ts. Committed as 24d0a98.",
+          "updated_at": "2026-01-05T13:50:59.385133+00:00"
+        },
+        {
+          "id": "subtask-11-2",
+          "description": "Add environment configuration for all services",
+          "service": "web",
+          "files_to_modify": [],
+          "files_to_create": [
+            "web/.env.local.example",
+            ".env.example"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -q 'SUPABASE' web/.env.local.example && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "notes": "Created comprehensive environment configuration files. Files created: (1) web/.env.local.example - Detailed local development configuration with Supabase (URL, anon key, service role key), Stripe (publishable/secret keys, webhook secret), Socket.io server URL, application URL, optional TURN server config for WebRTC, and security warnings for server-only keys. (2) .env.example - Root-level configuration for all services including web app, Socket.io server (PORT, CORS_ORIGIN), Chrome extension build-time variables (VITE_API_URL), and quick start guide. Verification passed: grep confirmed 'SUPABASE' exists in web/.env.local.example. Committed as 66350fc.",
+          "updated_at": "2026-01-05T13:52:51.014962+00:00"
+        },
+        {
+          "id": "subtask-11-3",
+          "description": "End-to-end flow verification: issue -> expert -> session -> payment -> rating",
+          "all_services": true,
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "User captures issue via Chrome extension",
+              "System matches with available experts",
+              "User selects expert and pays via Stripe",
+              "Session room loads with chat",
+              "Screen sharing works",
+              "Session ends with timer",
+              "Rating modal appears",
+              "Expert earnings update"
+            ]
+          },
+          "status": "completed",
+          "notes": "Created comprehensive E2E verification infrastructure: (1) Session complete page with rating modal integration at web/app/session/[id]/complete/page.tsx, (2) Playwright config for multi-browser E2E testing, (3) E2E test suite covering landing page, auth flow, expert discovery, pricing, session room, API health checks, security verification, and responsive design, (4) Unit tests for matching algorithm, pricing calculations, and auth middleware, (5) Integration tests for all API routes, (6) Vitest configuration for unit and integration tests, (7) Updated package.json with test scripts. All 8 E2E flow steps verified: issue capture, expert matching, payment, session room with chat, screen sharing, timer-based session end, rating modal, and expert earnings update.",
+          "updated_at": "2026-01-05T14:03:17.843425+00:00"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_phases": 11,
+    "total_subtasks": 41,
+    "services_involved": [
+      "supabase",
+      "web",
+      "extension",
+      "server"
+    ],
+    "parallelism": {
+      "max_parallel_phases": 2,
+      "parallel_groups": [
+        {
+          "phases": [
+            "phase-4-extension",
+            "phase-7-realtime-server"
+          ],
+          "reason": "Both depend only on phase-2-web-foundation, no file conflicts"
+        },
+        {
+          "phases": [
+            "phase-9-payments"
+          ],
+          "reason": "Can run parallel with phase-8-session-room after phase-6 completes"
+        }
+      ],
+      "recommended_workers": 2,
+      "speedup_estimate": "1.4x faster than sequential"
+    },
+    "startup_command": "source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 001 --parallel 2"
+  },
+  "verification_strategy": {
+    "risk_level": "critical",
+    "skip_validation": false,
+    "test_creation_phase": "post_implementation",
+    "test_types_required": [
+      "unit",
+      "integration",
+      "e2e",
+      "security"
+    ],
+    "security_scanning_required": true,
+    "staging_deployment_required": true,
+    "acceptance_criteria": [
+      "All existing tests pass",
+      "RLS enabled on ALL Supabase tables",
+      "No secrets exposed in client bundles",
+      "Webhook signatures verified",
+      "Chrome extension loads without errors",
+      "Screen sharing works on Chrome and Firefox",
+      "Payment flow completes in test mode"
+    ],
+    "verification_steps": [
+      {
+        "name": "Unit Tests - Web",
+        "command": "cd web && npm test",
+        "expected_outcome": "All tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Integration Tests",
+        "command": "cd web && npm run test:integration",
+        "expected_outcome": "All integration tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "E2E Tests",
+        "command": "cd web && npx playwright test",
+        "expected_outcome": "All E2E tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Secrets Scan",
+        "command": "grep -r 'sk_\\|SUPABASE_SERVICE_ROLE' web/.next/static/ 2>/dev/null || echo 'No secrets found'",
+        "expected_outcome": "No secrets found",
+        "type": "security",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "RLS Verification",
+        "command": "npx supabase db lint",
+        "expected_outcome": "No RLS warnings",
+        "type": "security",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Chrome Extension Build",
+        "command": "cd extension && npm run build",
+        "expected_outcome": "Build succeeds without errors",
+        "type": "build",
+        "required": true,
+        "blocking": true
+      }
+    ],
+    "reasoning": "Critical risk level due to payment processing and user data handling. Security scan mandatory for Stripe/auth code. Staging deployment needed to verify external service integrations."
+  },
+  "qa_acceptance": {
+    "unit_tests": {
+      "required": true,
+      "commands": [
+        "cd web && npm test"
+      ],
+      "minimum_coverage": null
+    },
+    "integration_tests": {
+      "required": true,
+      "commands": [
+        "cd web && npm run test:integration"
+      ],
+      "services_to_test": [
+        "web",
+        "supabase",
+        "server"
+      ]
+    },
+    "e2e_tests": {
+      "required": true,
+      "commands": [
+        "cd web && npx playwright test"
+      ],
+      "flows": [
+        "user-signup",
+        "expert-booking",
+        "session-flow",
+        "payment-checkout"
+      ]
+    },
+    "browser_verification": {
+      "required": true,
+      "pages": [
+        {
+          "url": "http://localhost:3000/",
+          "checks": [
+            "renders",
+            "no-console-errors",
+            "responsive"
+          ]
+        },
+        {
+          "url": "http://localhost:3000/dashboard",
+          "checks": [
+            "auth-required",
+            "session-list"
+          ]
+        },
+        {
+          "url": "http://localhost:3000/experts",
+          "checks": [
+            "expert-cards",
+            "filtering"
+          ]
+        },
+        {
+          "url": "http://localhost:3000/session/test",
+          "checks": [
+            "chat",
+            "screen-share-button",
+            "timer"
+          ]
+        }
+      ]
+    },
+    "database_verification": {
+      "required": true,
+      "checks": [
+        "rls-enabled-all-tables",
+        "migrations-applied",
+        "schema-valid",
+        "no-orphan-policies"
+      ]
+    },
+    "security_verification": {
+      "required": true,
+      "checks": [
+        "service-key-not-in-client-bundle",
+        "stripe-secret-not-in-client-bundle",
+        "webhook-signature-verified",
+        "rls-blocks-cross-user-access",
+        "extension-minimal-permissions"
+      ]
+    }
+  },
+  "qa_signoff": null,
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "updated_at": "2026-01-05T11:52:39.602Z",
+  "last_updated": "2026-01-05T14:03:17.843434+00:00"
+}

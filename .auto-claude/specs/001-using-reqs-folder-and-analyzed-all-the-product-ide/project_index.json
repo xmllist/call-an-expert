@@ -1,0 +1,65 @@
+{
+  "project_root": "/Users/bobacu/test/callAnExpert",
+  "project_type": "monorepo",
+  "services": {
+    "web": {
+      "path": "./web",
+      "tech_stack": ["typescript", "nextjs-15", "react-19", "tailwindcss"],
+      "port": 3000,
+      "dev_command": "npm run dev",
+      "build_command": "npm run build",
+      "test_command": "npm test",
+      "description": "Next.js 15 web application with App Router for user/expert dashboards"
+    },
+    "extension": {
+      "path": "./extension",
+      "tech_stack": ["typescript", "manifest-v3", "chrome-extension"],
+      "dev_command": "npm run build",
+      "build_command": "npm run build",
+      "description": "Chrome extension for issue capture and screenshots"
+    },
+    "server": {
+      "path": "./server",
+      "tech_stack": ["typescript", "socket.io", "node"],
+      "port": 3001,
+      "dev_command": "npm run dev",
+      "description": "Socket.io server for real-time chat and WebRTC signaling"
+    },
+    "supabase": {
+      "path": "./supabase",
+      "tech_stack": ["postgresql", "supabase"],
+      "port": 54321,
+      "dev_command": "npx supabase start",
+      "description": "Supabase local development with PostgreSQL and Auth"
+    }
+  },
+  "infrastructure": {
+    "docker": false,
+    "database": "postgresql-supabase",
+    "auth": "supabase-auth",
+    "payments": "stripe",
+    "realtime": "socket.io-webrtc"
+  },
+  "conventions": {
+    "linter": "eslint",
+    "formatter": "prettier",
+    "testing": "jest-vitest",
+    "package_manager": "npm"
+  },
+  "environment_variables": {
+    "web": [
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
+      "NEXT_PUBLIC_SOCKET_URL"
+    ],
+    "server": [
+      "PORT",
+      "NEXT_PUBLIC_APP_URL",
+      "SUPABASE_SERVICE_ROLE_KEY"
+    ]
+  }
+}

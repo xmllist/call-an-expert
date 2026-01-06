@@ -1,0 +1,64 @@
+{
+  "task_description": "Build Call-an-Expert MVP Platform connecting AI hobbyists with vetted experts for real-time help sessions",
+  "scoped_services": [
+    "chrome-extension",
+    "web-app",
+    "supabase-backend",
+    "socket-server",
+    "stripe-payments"
+  ],
+  "files_to_modify": {
+    "extension": [
+      "extension/manifest.json",
+      "extension/src/popup.tsx",
+      "extension/src/background.ts",
+      "extension/src/content.ts"
+    ],
+    "web": [
+      "web/app/layout.tsx",
+      "web/app/page.tsx",
+      "web/app/dashboard/page.tsx",
+      "web/app/expert/page.tsx",
+      "web/app/session/[id]/page.tsx",
+      "web/app/api/session/route.ts",
+      "web/app/api/webhook/stripe/route.ts",
+      "web/lib/supabase/client.ts",
+      "web/lib/supabase/server.ts",
+      "web/lib/socket/client.ts",
+      "web/lib/webrtc/peer.ts"
+    ],
+    "server": [
+      "server/index.ts",
+      "server/socket.ts"
+    ],
+    "supabase": [
+      "supabase/migrations/001_initial_schema.sql",
+      "supabase/migrations/002_rls_policies.sql"
+    ]
+  },
+  "files_to_reference": [
+    "reqs/ai-hired-helper-app-macos-or-chrome-extension-hire-an-ai-expert-the-moment-you-get-stuck-to-handle-the-last-20.md",
+    "reqs/screenshots/"
+  ],
+  "patterns": {
+    "supabase_client": "Use @supabase/ssr package with separate client.ts and server.ts files. Server uses cookie-based sessions with async cookies() API.",
+    "socket_io": "Singleton pattern with autoConnect: false. Room-based messaging for session isolation.",
+    "webrtc": "Native browser API - navigator.mediaDevices.getDisplayMedia() with STUN servers for connectivity.",
+    "stripe": "Payment Intents API only (not deprecated Tokens/Sources). Webhook signature verification mandatory.",
+    "chrome_extension": "Manifest V3 with service workers. Minimal permissions (activeTab, storage only).",
+    "nextjs": "App Router with React Server Components. Use client/server separation for Supabase."
+  },
+  "existing_implementations": {
+    "description": "Greenfield project - no existing code. All patterns defined in spec.md.",
+    "relevant_files": []
+  },
+  "security_requirements": [
+    "RLS must be enabled on ALL Supabase tables",
+    "Service role key NEVER exposed to client",
+    "Stripe secret key server-side only",
+    "Webhook signature verification required",
+    "Chrome extension uses minimal permissions"
+  ],
+  "created_at": "2026-01-05T17:50:36.564117",
+  "updated_at": "2026-01-05T18:00:00.000000"
+}

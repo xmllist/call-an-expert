@@ -1,0 +1,115 @@
+{
+  "complexity": "complex",
+  "workflow_type": "feature",
+  "confidence": 0.92,
+  "reasoning": "This is a GREENFIELD project requiring a complete product build from scratch. The product spans multiple platforms (macOS app and/or Chrome extension), requires multiple external integrations (payment processing, AI APIs, communication systems), complex user authentication, expert matching systems, and real-time session management. The scope is substantial with no existing codebase patterns to follow.",
+
+  "analysis": {
+    "scope": {
+      "estimated_files": 100,
+      "estimated_services": 4,
+      "is_cross_cutting": true,
+      "notes": "Greenfield project requiring: frontend (macOS/Chrome extension), backend API, database layer, payment service, real-time communication. Minimum viable product would still touch 50+ files across multiple services."
+    },
+    "integrations": {
+      "external_services": ["Stripe/Payment Gateway", "OpenAI/Claude API", "Authentication Provider (Auth0/Firebase)", "Real-time Communication (WebSocket/WebRTC)", "Email Service", "Analytics"],
+      "new_dependencies": ["stripe", "openai", "auth provider SDK", "websocket library", "email SDK"],
+      "research_needed": true,
+      "notes": "Multiple external integrations required for core functionality. Payment integration for tiered pricing model, AI API for expert assistance, auth for user management, real-time for live help sessions."
+    },
+    "infrastructure": {
+      "docker_changes": true,
+      "database_changes": true,
+      "config_changes": true,
+      "notes": "Requires full infrastructure setup: database (users, sessions, payments, experts), containerization for deployment, environment configuration for multiple services (dev/staging/prod), potentially message queues for session management."
+    },
+    "knowledge": {
+      "patterns_exist": false,
+      "research_required": true,
+      "unfamiliar_tech": ["Chrome Extension APIs", "macOS app development (Electron/Swift)", "Expert matching algorithms", "Real-time session management", "Payment tiering logic"],
+      "notes": "No existing codebase - this is greenfield. Research needed for platform-specific APIs (Chrome extensions, macOS development), payment provider integration patterns, and real-time communication architecture."
+    },
+    "risk": {
+      "level": "high",
+      "concerns": [
+        "Multi-platform complexity (Chrome extension + macOS app)",
+        "Payment security and PCI compliance",
+        "Real-time session reliability",
+        "Expert network/marketplace dynamics",
+        "User data privacy and security",
+        "Scaling for real-time sessions",
+        "Platform-specific approval processes (Chrome Web Store, macOS notarization)"
+      ],
+      "notes": "High risk due to payment handling, user data security, multi-platform development, and real-time system reliability requirements."
+    }
+  },
+
+  "recommended_phases": [
+    "discovery",
+    "requirements",
+    "research",
+    "context",
+    "spec_writing",
+    "self_critique",
+    "planning",
+    "validation"
+  ],
+
+  "flags": {
+    "needs_research": true,
+    "needs_self_critique": true,
+    "needs_infrastructure_setup": true
+  },
+
+  "validation_recommendations": {
+    "risk_level": "critical",
+    "skip_validation": false,
+    "minimal_mode": false,
+    "test_types_required": ["unit", "integration", "e2e", "security"],
+    "security_scan_required": true,
+    "staging_deployment_required": true,
+    "reasoning": "This is a payment-processing, user-data-handling application requiring maximum validation. Security scan mandatory for payment/auth code. Staging deployment needed to verify integrations with external services (Stripe webhooks, auth flows, real-time sessions)."
+  },
+
+  "product_summary": {
+    "name": "Call-an-Expert Service",
+    "tagline": "Hire an AI expert the moment you get stuck to handle the last 20%",
+    "target_audience": "Non-developers stuck at 80% completion using vibe coding tools",
+    "platforms": ["macOS App", "Chrome Extension"],
+    "pricing_tiers": [
+      {"tier": "Lead Magnet", "price": "Free", "offering": "AI Project Roadblock Guide"},
+      {"tier": "Freemium", "price": "Free with pay-per-session", "offering": "Access to AI Help Tool"},
+      {"tier": "Core", "price": "$19-$59/session", "offering": "Expert Help Sessions"},
+      {"tier": "Pro", "price": "$89-$499/year", "offering": "Subscription with priority access"},
+      {"tier": "Enterprise", "price": "$3,995+/year", "offering": "Dedicated Support Package"}
+    ],
+    "market_indicators": {
+      "search_volume": "49.5K",
+      "growth": "+5525%",
+      "opportunity_score": "9/10",
+      "problem_severity": "9/10",
+      "revenue_potential": "$1M-$10M ARR"
+    }
+  },
+
+  "recommended_mvp_scope": {
+    "description": "Given the complexity, recommend starting with a focused MVP before full product build",
+    "suggested_first_phase": "Chrome Extension only (faster development, easier distribution)",
+    "core_features_for_mvp": [
+      "User authentication",
+      "Context capture from current page/project",
+      "AI-powered help chat (direct AI, not human experts for MVP)",
+      "Pay-per-session with Stripe",
+      "Basic usage tracking"
+    ],
+    "deferred_features": [
+      "macOS native app",
+      "Human expert network",
+      "Real-time live sessions",
+      "Enterprise tier",
+      "Subscription billing"
+    ]
+  },
+
+  "created_at": "2026-01-05T17:45:00.000Z"
+}
