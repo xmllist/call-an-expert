@@ -1,0 +1,18 @@
+{
+  "name": "call-an-expert-tests",
+  "version": "1.0.0",
+  "description": "Integration tests for Call-an-Expert",
+  "scripts": {
+    "test": "playwright test",
+    "test:e2e": "playwright test --project=chromium",
+    "test:all-browsers": "playwright test",
+    "test:integration": "playwright test --project=chromium tests/integration/",
+    "test:report": "playwright show-report",
+    "test:coverage": "playwright test --reporter=line && npx playwright test --reporter=html",
+    "install:playwright": "playwright install --with-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "typescript": "^5.3.0"
+  }
+}

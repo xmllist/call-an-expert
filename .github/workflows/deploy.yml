@@ -1,0 +1,87 @@
+# Deployment Pipeline - Phase 06: Integration Tests
+name: Deploy
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy-web:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install and build
+        run: |
+          cd web
+          npm ci
+          npm run build
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./web
+
+  deploy-extension:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Build extension
+        run: |
+          cd extensions
+          npm ci
+          npm run build
+
+      - name: Create release ZIP
+        run: |
+          cd extensions
+          zip -r release.zip . -x "node_modules/*" ".git/*"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: extensions/release.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-supabase:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy database changes
+        run: |
+          cd supabase
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase db push
+
+      - name: Deploy Edge Functions
+        run: |
+          cd supabase
+          supabase functions deploy --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
