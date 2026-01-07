@@ -1,0 +1,111 @@
+# Supabase Configuration
+# Phase 02: Supabase Backend Setup
+
+[project]
+id = "call-an-expert"
+name = "call-an-expert"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+vector_enabled = false
+
+[db]
+enabled = true
+port = 54322
+shadow_port = 54320
+# Seed file will be applied on startup
+seed = "seed/seed.sql"
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost:54321"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+# Secure key - override in .env for production
+admin_email = "admin@callanexpert.com"
+auth_url = "/auth/v1"
+jwt_secret = "super-secret-jwt-key-change-in-production"
+external = {
+  email = { enabled = true, provider = "email" },
+  phone = { enabled = true, provider = "sms" },
+  # OAuth providers - configure in .env
+  google = { enabled = false },
+  github = { enabled = false },
+  discord = { enabled = false }
+}
+
+[realtime]
+enabled = true
+# Broadcast to websocket clients
+postgres_cdc = "postgres"
+# Number of messages per second to broadcast
+broadcast_messages_per_second = 10
+
+[storage]
+enabled = true
+# S3-compatible storage configuration
+file_size_limit = "50MiB"
+
+[functions]
+enabled = true
+# Verify JWTs for function calls
+verify_jwt = true
+# Deno runtime configuration
+[functions.deno]
+import_map_url = ""
+
+[edge-runtime]
+# Enable edge functions
+enabled = true
+# Response timeout in seconds
+timeout = 30
+
+[postgres]
+# Connection pool settings
+pool_mode = "transaction"
+# Maximum connections in pool
+max = 100
+# Idle timeout in seconds
+idle_timeout = 3600
+
+# Enable PostGIS for geospatial queries (optional)
+postgis = false
+
+# ============================================
+# WEBHOOKS
+# ============================================
+
+[webhooks]
+# Payment webhook for Stripe
+[[webhooks]]
+name = "stripe-payments"
+table = "payments"
+event = "INSERT"
+schema = "public"
+function = "handle_stripe_webhook"
+
+# Session status change webhook
+[[webhooks]]
+name = "session-status"
+table = "sessions"
+event = "UPDATE"
+schema = "public"
+function = "handle_session_webhook"
+
+# ============================================
+# ENVIRONMENT VARIABLES (set in .env)
+# ============================================
+
+# Required for production deployment:
+# SUPABASE_URL=https://your-project.supabase.co
+# SUPABASE_ANON_KEY=your-anon-key
+# SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+# STRIPE_SECRET_KEY=sk_test_xxx
+# STRIPE_WEBHOOK_SECRET=whsec_xxx
+# DAILY_API_KEY=xxx
