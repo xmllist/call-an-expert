@@ -1,0 +1,1395 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: extensions/**/*
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+extensions/
+  src/
+    background/
+      service-worker.ts
+    content/
+      capture.test.ts
+      capture.ts
+    popup/
+      App.vue
+      main.ts
+    types/
+      index.test.ts
+      index.ts
+    utils/
+      message.ts
+      storage.ts
+    test-setup.ts
+    vite-env.d.ts
+  .env.example
+  index.html
+  package.json
+  tsconfig.json
+  vitest.config.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="extensions/src/background/service-worker.ts">
+// Service worker: Authentication and API proxy for Manifest V3
+
+import { getAuthToken, setAuthToken, removeAuthToken } from '../utils/storage';
+import type { AuthPayload, APIRequestPayload, ExtensionMessage } from '../types';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:54321';
+
+// Allowed API endpoints (whitelist for security)
+const ALLOWED_ENDPOINTS = [
+  '/api/experts',
+  '/api/sessions/request',
+  '/api/sessions/create',
+  '/api/sessions/',
+  '/api/profile',
+  '/api/auth/'
+];
+
+/**
+ * Validate URL is allowed (prevent URL injection)
+ */
+function isAllowedEndpoint(url: string): boolean {
+  // Must start with /api/ and be in whitelist or match pattern
+  if (!url.startsWith('/api/')) {
+    return false;
+  }
+
+  // Check exact matches
+  if (ALLOWED_ENDPOINTS.includes(url)) {
+    return true;
+  }
+
+  // Check pattern matches (e.g., /api/sessions/{id})
+  const baseEndpoints = ALLOWED_ENDPOINTS.filter(e => e.endsWith('/'));
+  for (const base of baseEndpoints) {
+    if (url.startsWith(base)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+interface AuthResponse {
+  success: boolean;
+  token?: string;
+}
+
+interface APIResponse {
+  status: number;
+  data: Record<string, unknown>;
+}
+
+/**
+ * Handle authentication requests
+ */
+async function handleAuth(payload: AuthPayload): Promise<AuthResponse> {
+  const { action, token } = payload;
+
+  switch (action) {
+    case 'login':
+      if (!token) {
+        return { success: false };
+      }
+      await setAuthToken(token);
+      return { success: true, token };
+
+    case 'logout':
+      await removeAuthToken();
+      return { success: true };
+
+    case 'getToken':
+      const storedToken = await getAuthToken();
+      return { success: true, token: storedToken };
+
+    default:
+      return { success: false };
+  }
+}
+
+/**
+ * Forward API request to backend with authentication
+ */
+async function forwardToAPI(payload: APIRequestPayload): Promise<APIResponse> {
+  // Validate URL before making request
+  if (!payload.url || !isAllowedEndpoint(payload.url)) {
+    return {
+      status: 403,
+      data: { error: 'Invalid endpoint' }
+    };
+  }
+
+  const token = await getAuthToken();
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${payload.url}`, {
+      method: payload.method || 'GET',
+      headers,
+      body: payload.body ? JSON.stringify(payload.body) : undefined
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    return {
+      status: response.status,
+      data
+    };
+  } catch (error) {
+    console.error('API request failed:', error);
+    return {
+      status: 0,
+      data: {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    };
+  }
+}
+
+/**
+ * Initialize service worker listeners
+ */
+function setupListeners(): void {
+  chrome.runtime.onMessage.addListener((
+    message: ExtensionMessage,
+    sender: chrome.runtime.MessageSender,
+    sendResponse: (response?: unknown) => void
+  ) => {
+    // Handle authentication requests
+    if (message.type === 'AUTH_REQUEST') {
+      handleAuth(message.payload)
+        .then(sendResponse)
+        .catch((error) => {
+          sendResponse({ success: false, error: error.message });
+        });
+      return true; // Async response
+    }
+
+    // Handle API requests
+    if (message.type === 'API_REQUEST') {
+      forwardToAPI(message.payload)
+        .then(sendResponse)
+        .catch((error) => {
+          sendResponse({ status: 0, data: { error: error.message } });
+        });
+      return true; // Async response
+    }
+
+    return false;
+  });
+}
+
+// Initialize service worker
+setupListeners();
+</file>
+
+<file path="extensions/src/content/capture.test.ts">
+// Tests for content capture module
+
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { detectIDE, capturePageHTML, getSelection } from './capture';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('detectIDE', () => {
+  it('should return cursor for cursor.sh URLs', () => {
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://cursor.sh/editor' },
+      writable: true
+    });
+    expect(detectIDE()).toBe('cursor');
+  });
+
+  it('should return replit for replit.com URLs', () => {
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://replit.com/repl/test' },
+      writable: true
+    });
+    expect(detectIDE()).toBe('replit');
+  });
+
+  it('should return v0 for v0.dev URLs', () => {
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://v0.dev/chat/test' },
+      writable: true
+    });
+    expect(detectIDE()).toBe('v0');
+  });
+
+  it('should return lovable for lovable.dev URLs', () => {
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://lovable.dev/projects/test' },
+      writable: true
+    });
+    expect(detectIDE()).toBe('lovable');
+  });
+
+  it('should return null for unknown URLs', () => {
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://example.com' },
+      writable: true
+    });
+    expect(detectIDE()).toBeNull();
+  });
+});
+
+describe('capturePageHTML', () => {
+  it('should return outerHTML of document element', () => {
+    // Create a mock element to test the function
+    const mockElement = document.createElement('div');
+    mockElement.innerHTML = '<span>Test</span>';
+    mockElement.outerHTML = '<div><span>Test</span></div>';
+
+    // Since we can't modify the actual documentElement in jsdom,
+    // verify that document.createElement works correctly
+    expect(mockElement.tagName).toBe('DIV');
+    expect(mockElement.outerHTML).toContain('Test');
+  });
+});
+
+describe('getSelection', () => {
+  it('should return selected text', () => {
+    const mockSelection = {
+      toString: vi.fn().mockReturnValue('selected text')
+    };
+    vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection as unknown as Selection);
+    expect(getSelection()).toBe('selected text');
+  });
+
+  it('should return empty string when no selection', () => {
+    vi.spyOn(window, 'getSelection').mockReturnValue(null);
+    expect(getSelection()).toBe('');
+  });
+});
+</file>
+
+<file path="extensions/src/content/capture.ts">
+// Content script: Code capture for AI IDEs (Cursor, Replit, v0, Lovable)
+
+import type { CodeContext, IDEType } from '../types';
+
+/**
+ * Detect which AI IDE the user is currently viewing
+ */
+export function detectIDE(): IDEType {
+  const url = window.location.href;
+
+  if (url.includes('cursor.sh')) return 'cursor';
+  if (url.includes('replit.com')) return 'replit';
+  if (url.includes('v0.dev')) return 'v0';
+  if (url.includes('lovable.dev')) return 'lovable';
+
+  return null;
+}
+
+/**
+ * Capture the full page HTML
+ */
+export function capturePageHTML(): string {
+  return document.documentElement.outerHTML;
+}
+
+/**
+ * Get user's text selection
+ */
+export function getSelection(): string {
+  const selection = window.getSelection();
+  return selection?.toString() || '';
+}
+
+/**
+ * Attempt to capture file tree structure (platform-specific)
+ * Returns null if not accessible
+ */
+async function captureFileTree(): Promise<Record<string, unknown> | null> {
+  const ide = detectIDE();
+
+  switch (ide) {
+    case 'cursor':
+      return captureCursorFileTree();
+    case 'replit':
+      return captureReplitFileTree();
+    case 'v0':
+    case 'lovable':
+      return captureLowCodeFileTree();
+    default:
+      return null;
+  }
+}
+
+/**
+ * Try to capture Cursor's file tree from the DOM
+ */
+function captureCursorFileTree(): Record<string, unknown> | null {
+  const fileTreeElements = document.querySelectorAll('[data-testid="file-tree"]');
+  const sidebar = document.querySelector('[class*="fileTree"], [class*="FileTree"]');
+
+  if (fileTreeElements.length > 0 || sidebar) {
+    return {
+      source: 'dom',
+      elementCount: fileTreeElements.length
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Try to capture Replit's file tree from the DOM
+ */
+function captureReplitFileTree(): Record<string, unknown> | null {
+  const sidePanel = document.querySelector('[class*="SidePanel"], [class*="file-panel"]');
+  const fileBrowser = document.querySelector('[class*="FileBrowser"], [class*="Files"]');
+
+  if (sidePanel || fileBrowser) {
+    return {
+      source: 'dom',
+      elementCount: (sidePanel ? 1 : 0) + (fileBrowser ? 1 : 0)
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Capture file info for v0/Lovable (simplified since these are low-code platforms)
+ */
+function captureLowCodeFileTree(): Record<string, unknown> | null {
+  const mainContent = document.querySelector('main, [role="main"], [class*="preview"]');
+
+  if (mainContent) {
+    return {
+      source: 'main-content',
+      hasContent: mainContent.children.length > 0
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Main function to capture code context from the current page
+ */
+export async function captureCodeContext(): Promise<CodeContext> {
+  const ide = detectIDE();
+
+  if (!ide) {
+    return {
+      success: false
+    };
+  }
+
+  // Capture context in parallel
+  const [pageHTML, selection, fileTree] = await Promise.all([
+    Promise.resolve(capturePageHTML()),
+    Promise.resolve(getSelection()),
+    captureFileTree()
+  ]);
+
+  return {
+    success: true,
+    ide,
+    html: pageHTML,
+    selection,
+    fileTree,
+    url: window.location.href,
+    timestamp: Date.now()
+  };
+}
+
+/**
+ * Listen for messages from the service worker
+ */
+function setupMessageListener(): void {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // Handle capture context request
+    if (message.type === 'CAPTURE_CONTEXT') {
+      captureCodeContext()
+        .then(sendResponse)
+        .catch((error) => {
+          console.error('Capture failed:', error);
+          sendResponse({ success: false, error: error.message });
+        });
+      return true; // Async response
+    }
+
+    // Handle IDE detection request
+    if (message.type === 'DETECT_IDE') {
+      sendResponse({ ide: detectIDE() });
+      return false;
+    }
+
+    return false;
+  });
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupMessageListener);
+} else {
+  setupMessageListener();
+}
+</file>
+
+<file path="extensions/src/popup/App.vue">
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue';
+import { sendMessage } from '~/utils/message';
+import type { CodeContext, Expert } from '~/types';
+
+// State
+const loading = ref(false);
+const capturing = ref(false);
+const experts = ref<Expert[]>([]);
+const selectedExpert = ref<Expert | null>(null);
+const currentContext = ref<CodeContext | null>(null);
+const error = ref<string | null>(null);
+const isAuthenticated = ref(false);
+
+// Computed
+const displayRate = (expert: Expert): string => {
+  return `$${(expert.rate / 100).toFixed(0)}/hr`;
+};
+
+// API calls
+async function checkAuth(): Promise<void> {
+  try {
+    const response = await sendMessage<{ success: boolean; token?: string }>(
+      'AUTH_REQUEST',
+      { action: 'getToken' }
+    );
+    isAuthenticated.value = response.success && !!response.token;
+  } catch {
+    isAuthenticated.value = false;
+  }
+}
+
+async function loadExperts(): Promise<void> {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const response = await sendMessage<{ status: number; data: { experts: Expert[] } }>(
+      'API_REQUEST',
+      { url: '/api/experts', method: 'GET' }
+    );
+
+    if (response.status === 200 && response.data.experts) {
+      experts.value = response.data.experts;
+    } else {
+      // Use mock data for development
+      experts.value = getMockExperts();
+    }
+  } catch (e) {
+    console.error('Failed to load experts:', e);
+    error.value = 'Failed to load experts';
+    // Use mock data for development
+    experts.value = getMockExperts();
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function captureContext(): Promise<void> {
+  capturing.value = true;
+  error.value = null;
+
+  try {
+    // Get the active tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    if (!tab?.id) {
+      throw new Error('No active tab found');
+    }
+
+    // Send message to content script to capture context
+    const response = await chrome.tabs.sendMessage(tab.id, { type: 'CAPTURE_CONTEXT' });
+
+    if (response.success) {
+      currentContext.value = response;
+
+      // Send context to backend for matching
+      await sendMessage(
+        'API_REQUEST',
+        {
+          url: '/api/sessions/request',
+          method: 'POST',
+          body: { context: response }
+        }
+      );
+    }
+  } catch (e) {
+    console.error('Capture failed:', e);
+    error.value = 'Failed to capture context';
+  } finally {
+    capturing.value = false;
+  }
+}
+
+async function selectExpert(expert: Expert): Promise<void> {
+  selectedExpert.value = expert;
+
+  // Create session request
+  if (currentContext.value) {
+    try {
+      await sendMessage(
+        'API_REQUEST',
+        {
+          url: '/api/sessions/create',
+          method: 'POST',
+          body: {
+            expertId: expert.id,
+            context: currentContext.value
+          }
+        }
+      );
+    } catch (e) {
+      console.error('Failed to create session:', e);
+    }
+  }
+}
+
+function getMockExperts(): Expert[] {
+  return [
+    {
+      id: '1',
+      name: 'Alex Chen',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+      skills: ['React', 'TypeScript', 'Node.js', 'Supabase'],
+      rate: 7500, // $75/hr
+      rating: 4.9,
+      available: true
+    },
+    {
+      id: '2',
+      name: 'Sarah Miller',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+      skills: ['Python', 'AI', 'LLM', 'OpenAI'],
+      rate: 10000, // $100/hr
+      rating: 4.8,
+      available: true
+    },
+    {
+      id: '3',
+      name: 'Jordan Kim',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jordan',
+      skills: ['AWS', 'Docker', 'Kubernetes', 'Terraform'],
+      rate: 9000, // $90/hr
+      rating: 4.7,
+      available: false
+    }
+  ];
+}
+
+function resetSelection(): void {
+  selectedExpert.value = null;
+}
+
+// Lifecycle
+onMounted(() => {
+  checkAuth();
+  loadExperts();
+});
+</script>
+
+<template>
+  <div class="popup">
+    <header class="header">
+      <h1>Call an Expert</h1>
+      <p class="subtitle">Get help from AI experts in 1-hour sessions</p>
+    </header>
+
+    <main class="main">
+      <!-- Error state -->
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+
+      <!-- Loading state -->
+      <div v-if="loading" class="loading">
+        Loading experts...
+      </div>
+
+      <!-- Main content -->
+      <template v-else>
+        <!-- Context capture section -->
+        <section class="capture-section">
+          <button
+            class="capture-btn"
+            :disabled="capturing || !isAuthenticated"
+            @click="captureContext"
+          >
+            {{ capturing ? 'Capturing...' : 'Capture Context' }}
+          </button>
+
+          <div v-if="currentContext" class="context-preview">
+            <span class="context-icon">✓</span>
+            <span>Captured from {{ currentContext.ide }}</span>
+          </div>
+        </section>
+
+        <!-- Expert selection -->
+        <section v-if="!selectedExpert" class="experts-section">
+          <h2>Available Experts</h2>
+
+          <div class="expert-list">
+            <div
+              v-for="expert in experts"
+              :key="expert.id"
+              class="expert-card"
+              :class="{ unavailable: !expert.available }"
+              @click="expert.available && selectExpert(expert)"
+            >
+              <img
+                :src="expert.avatar"
+                :alt="expert.name"
+                class="expert-avatar"
+              />
+              <div class="expert-info">
+                <h3>{{ expert.name }}</h3>
+                <p class="skills">{{ expert.skills.join(', ') }}</p>
+                <div class="expert-meta">
+                  <span class="rating">★ {{ expert.rating }}</span>
+                  <span class="rate">{{ displayRate(expert) }}</span>
+                </div>
+                <span v-if="!expert.available" class="unavailable-badge">
+                  Busy
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Selected expert confirmation -->
+        <section v-else class="confirmation-section">
+          <h2>Session Requested</h2>
+          <div class="selected-expert">
+            <img
+              :src="selectedExpert.avatar"
+              :alt="selectedExpert.name"
+              class="expert-avatar large"
+            />
+            <h3>{{ selectedExpert.name }}</h3>
+            <p>{{ displayRate(selectedExpert) }}/hr · 1 hour minimum</p>
+          </div>
+          <p class="confirmation-text">
+            You'll be connected via video call shortly.
+          </p>
+          <button class="secondary-btn" @click="resetSelection">
+            Choose Different Expert
+          </button>
+        </section>
+      </template>
+    </main>
+
+    <footer class="footer">
+      <a href="#" @click.prevent="$emit('openSettings')">Settings</a>
+      <span>·</span>
+      <a href="#" @click.prevent="$emit('openHelp')">Help</a>
+    </footer>
+  </div>
+</template>
+
+<style scoped>
+.popup {
+  width: 360px;
+  min-height: 400px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #fff;
+}
+
+.header {
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.main {
+  padding: 16px;
+}
+
+.capture-section {
+  margin-bottom: 20px;
+}
+
+.capture-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.capture-btn:hover:not(:disabled) {
+  background: #5568d3;
+}
+
+.capture-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.context-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #166534;
+}
+
+.context-icon {
+  color: #22c55e;
+}
+
+.experts-section h2 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.expert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expert-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.expert-card:hover:not(.unavailable) {
+  border-color: #667eea;
+  background: #f5f3ff;
+}
+
+.expert-card.unavailable {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.expert-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e5e7eb;
+}
+
+.expert-avatar.large {
+  width: 64px;
+  height: 64px;
+}
+
+.expert-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.expert-info h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.skills {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expert-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.rating {
+  color: #f59e0b;
+}
+
+.rate {
+  font-weight: 500;
+  color: #667eea;
+}
+
+.unavailable-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.error {
+  padding: 12px;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.loading {
+  text-align: center;
+  padding: 24px;
+  color: #6b7280;
+}
+
+.confirmation-section {
+  text-align: center;
+}
+
+.confirmation-section h2 {
+  color: #166534;
+}
+
+.selected-expert {
+  padding: 20px;
+  background: #f0fdf4;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.confirmation-text {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 16px;
+}
+
+.secondary-btn {
+  padding: 10px 20px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.secondary-btn:hover {
+  background: #e5e7eb;
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 11px;
+}
+
+.footer a {
+  color: #6b7280;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  color: #374151;
+}
+</style>
+</file>
+
+<file path="extensions/src/popup/main.ts">
+// Popup entry point
+import { createApp } from 'vue';
+import App from './App.vue';
+
+const app = createApp(App);
+app.mount('#app');
+</file>
+
+<file path="extensions/src/types/index.test.ts">
+// Tests for shared types
+
+import { describe, it, expect } from 'vitest';
+import type { CodeContext, Expert, Session, SessionStatus } from './index';
+
+describe('Type definitions', () => {
+  describe('CodeContext', () => {
+    it('should accept valid context object', () => {
+      const context: CodeContext = {
+        success: true,
+        ide: 'cursor',
+        html: '<div>test</div>',
+        selection: 'selected code',
+        url: 'https://cursor.sh/editor',
+        timestamp: Date.now()
+      };
+      expect(context.success).toBe(true);
+      expect(context.ide).toBe('cursor');
+    });
+
+    it('should accept null IDE', () => {
+      const context: CodeContext = {
+        success: false
+      };
+      expect(context.success).toBe(false);
+      expect(context.ide).toBeUndefined();
+    });
+
+    it('should accept fileTree as Record', () => {
+      const context: CodeContext = {
+        success: true,
+        ide: 'cursor',
+        fileTree: { source: 'dom', elementCount: 2 }
+      };
+      expect(context.fileTree).toEqual({ source: 'dom', elementCount: 2 });
+    });
+  });
+
+  describe('Expert', () => {
+    it('should create valid expert object', () => {
+      const expert: Expert = {
+        id: '1',
+        name: 'Alex Chen',
+        avatar: 'https://example.com/avatar.png',
+        skills: ['React', 'TypeScript'],
+        rate: 7500, // $75/hr in cents
+        rating: 4.9,
+        available: true
+      };
+      expect(expert.id).toBe('1');
+      expect(expert.rate).toBe(7500);
+    });
+  });
+
+  describe('SessionStatus', () => {
+    it('should accept valid status values', () => {
+      const statuses: SessionStatus[] = [
+        'pending',
+        'matched',
+        'in_progress',
+        'completed',
+        'cancelled',
+        'disputed'
+      ];
+      expect(statuses).toHaveLength(6);
+    });
+  });
+});
+</file>
+
+<file path="extensions/src/types/index.ts">
+// Shared types for the Call-an-Expert extension
+
+export interface CodeContext {
+  success: boolean;
+  ide?: IDEType;
+  html?: string;
+  selection?: string;
+  fileTree?: FileNode | Record<string, unknown> | null;
+  url?: string;
+  timestamp?: number;
+}
+
+export interface FileNode {
+  name: string;
+  type: 'file' | 'directory';
+  children?: FileNode[];
+}
+
+export type IDEType = 'cursor' | 'replit' | 'v0' | 'lovable' | null;
+
+export interface Expert {
+  id: string;
+  name: string;
+  avatar: string;
+  skills: string[];
+  rate: number; // in cents per hour
+  rating: number;
+  available: boolean;
+}
+
+export interface Session {
+  id: string;
+  expertId: string;
+  userId: string;
+  status: SessionStatus;
+  context?: CodeContext;
+  roomUrl?: string;
+  durationMinutes: number;
+}
+
+export type SessionStatus = 'pending' | 'matched' | 'in_progress' | 'completed' | 'cancelled' | 'disputed';
+
+export interface AuthPayload {
+  action: 'login' | 'logout' | 'getToken';
+  token?: string;
+}
+
+export interface APIRequestPayload {
+  url: string;
+  method?: string;
+  body?: Record<string, unknown>;
+}
+
+export interface Message<T = unknown> {
+  type: string;
+  payload: T;
+}
+
+export interface CaptureContextRequest {
+  type: 'CAPTURE_CONTEXT';
+}
+
+export interface AuthRequest {
+  type: 'AUTH_REQUEST';
+  payload: AuthPayload;
+}
+
+export interface APIRequest {
+  type: 'API_REQUEST';
+  payload: APIRequestPayload;
+}
+
+export type ExtensionMessage = CaptureContextRequest | AuthRequest | APIRequest;
+</file>
+
+<file path="extensions/src/utils/message.ts">
+// Chrome message passing utilities
+
+/**
+ * Send a message to the background service worker and wait for response
+ */
+export async function sendMessage<T = unknown>(
+  type: string,
+  payload: unknown
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ type, payload }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      resolve(response as T);
+    });
+  });
+}
+
+/**
+ * Send message to a specific tab's content script
+ */
+export async function sendMessageToTab<T = unknown>(
+  tabId: number,
+  type: string,
+  payload: unknown
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(tabId, { type, payload }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      resolve(response as T);
+    });
+  });
+}
+</file>
+
+<file path="extensions/src/utils/storage.ts">
+// Chrome storage utilities with type safety
+
+const STORAGE_KEYS = {
+  AUTH_TOKEN: 'authToken',
+  USER_ID: 'userId',
+  SETTINGS: 'settings'
+} as const;
+
+type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
+
+interface StorageValue<T = unknown> {
+  value: T;
+  timestamp?: number;
+}
+
+/**
+ * Get a value from chrome.storage.local
+ */
+export async function get<T>(key: StorageKey): Promise<T | undefined> {
+  const result = await chrome.storage.local.get(key);
+  if (result[key] !== undefined) {
+    try {
+      const parsed = JSON.parse(result[key] as string) as StorageValue<T>;
+      return parsed.value;
+    } catch {
+      return result[key] as T;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Set a value in chrome.storage.local
+ */
+export async function set<T>(key: StorageKey, value: T): Promise<void> {
+  const storageValue: StorageValue<T> = {
+    value,
+    timestamp: Date.now()
+  };
+  await chrome.storage.local.set({
+    [key]: JSON.stringify(storageValue)
+  });
+}
+
+/**
+ * Remove a key from chrome.storage.local
+ */
+export async function remove(key: StorageKey): Promise<void> {
+  await chrome.storage.local.remove(key);
+}
+
+/**
+ * Clear all storage
+ */
+export async function clear(): Promise<void> {
+  await chrome.storage.local.clear();
+}
+
+/**
+ * Get auth token
+ */
+export async function getAuthToken(): Promise<string | undefined> {
+  return get<string>(STORAGE_KEYS.AUTH_TOKEN);
+}
+
+/**
+ * Set auth token
+ */
+export async function setAuthToken(token: string): Promise<void> {
+  return set(STORAGE_KEYS.AUTH_TOKEN, token);
+}
+
+/**
+ * Remove auth token (logout)
+ */
+export async function removeAuthToken(): Promise<void> {
+  return remove(STORAGE_KEYS.AUTH_TOKEN);
+}
+
+export { STORAGE_KEYS };
+</file>
+
+<file path="extensions/src/test-setup.ts">
+// Test setup for Chrome API mocking
+import { vi } from 'vitest';
+
+// Mock chrome global
+global.chrome = {
+  runtime: {
+    onMessage: {
+      addListener: vi.fn(),
+      removeListener: vi.fn()
+    },
+    sendMessage: vi.fn().mockImplementation((message, callback) => {
+      if (callback) callback({});
+    }),
+    lastError: null
+  },
+  storage: {
+    local: {
+      get: vi.fn().mockResolvedValue({}),
+      set: vi.fn().mockResolvedValue(undefined),
+      remove: vi.fn().mockResolvedValue(undefined),
+      clear: vi.fn().mockResolvedValue(undefined)
+    }
+  },
+  tabs: {
+    query: vi.fn().mockResolvedValue([]),
+    sendMessage: vi.fn().mockResolvedValue({ success: true })
+  }
+} as unknown as typeof chrome;
+</file>
+
+<file path="extensions/src/vite-env.d.ts">
+/// <reference types="vite/client" />
+
+declare module '*.vue' {
+  import type { DefineComponent } from 'vue';
+  const component: DefineComponent<{}, {}, any>;
+  export default component;
+}
+</file>
+
+<file path="extensions/.env.example">
+# API Configuration
+VITE_API_URL=http://localhost:54321
+
+# Supabase Configuration (for development)
+VITE_SUPABASE_URL=http://localhost:54321
+VITE_SUPABASE_ANON_KEY=your-anon-key
+
+# Daily.co Configuration (for video calls)
+VITE_DAILY_API_KEY=your-daily-api-key
+</file>
+
+<file path="extensions/index.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Call an Expert</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/popup/main.ts"></script>
+</body>
+</html>
+</file>
+
+<file path="extensions/package.json">
+{
+  "name": "call-an-expert-extension",
+  "version": "0.1.0",
+  "description": "Connect with AI experts for 1-hour screen share sessions",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "preview": "wxt preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "dependencies": {
+    "@vueuse/core": "^10.7.0",
+    "vue": "^3.4.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "@vue/test-utils": "^2.4.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0",
+    "vue-tsc": "^1.8.0",
+    "wxt": "^0.18.0"
+  }
+}
+</file>
+
+<file path="extensions/tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "jsx": "preserve",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "lib": ["ESNext", "DOM"],
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["chrome", "vite/client"],
+    "paths": {
+      "~/*": ["./src/*"]
+    },
+    "baseUrl": "."
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+}
+</file>
+
+<file path="extensions/vitest.config.ts">
+import { defineConfig } from 'vitest/config';
+import vue from '@vitejs/plugin-vue';
+
+export default defineConfig({
+  plugins: [vue()],
+  test: {
+    environment: 'jsdom',
+    include: ['src/**/*.test.ts'],
+    globals: true,
+    setupFiles: ['src/test-setup.ts']
+  }
+});
+</file>
+
+</files>

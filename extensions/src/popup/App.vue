@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { sendMessage } from '~/utils/message';
-import type { CodeContext, Expert } from '~/types';
+import { sendMessage } from '../utils/message';
+import type { CodeContext, Expert } from '../types';
 
 // State
 const loading = ref(false);
